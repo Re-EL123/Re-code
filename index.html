@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Re-Code | Re-EL's Advanced Coding AI</title>
+<title>Re-Code | Re-EL’s Advanced Coding AI</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
 <!-- React + Babel CDN -->
@@ -31,61 +31,21 @@
 
 <style>
 * { box-sizing: border-box; }
-body { margin:0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: radial-gradient(circle at top, #0b0f1a, #000); color: #fff; overflow-x: hidden; }
-.app { max-width: 1400px; margin: auto; padding: 40px 30px; animation: fadeIn 0.8s ease; }
+body { margin:0; font-family: Inter, system-ui, sans-serif; background: radial-gradient(circle at top, #0b0f1a, #000); color: #fff; }
+.app { max-width: 1200px; margin: auto; padding: 30px; animation: fadeIn 0.8s ease; }
 @keyframes fadeIn { from {opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:30px; flex-wrap: wrap; gap: 15px; }
-.brand { display:flex; align-items:center; gap:12px; font-size:1.8rem; font-weight:700; }
-.brand i { color:#6ef3c5; }
-.brand span { background: linear-gradient(135deg,#6ef3c5,#4ade80); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-.model-badge { background: rgba(110,243,197,0.15); border: 1px solid #6ef3c5; padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; color: #6ef3c5; display: flex; align-items: center; gap: 8px; }
-.panel { background: rgba(255,255,255,0.05); border-radius:20px; padding:25px; backdrop-filter: blur(10px); box-shadow:0 8px 32px rgba(0,0,0,0.4); margin-bottom:25px; border: 1px solid rgba(255,255,255,0.08); }
-textarea { width:100%; height:120px; background:#020617; border:1px solid #1e293b; color:#e5e7eb; border-radius:12px; padding:15px; resize:none; font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace; font-size: 0.95rem; transition: border 0.3s ease; }
-textarea:focus { outline: none; border-color: #6ef3c5; box-shadow: 0 0 0 3px rgba(110,243,197,0.1); }
-.actions { display:flex; justify-content:space-between; margin-top:15px; gap: 12px; flex-wrap: wrap; }
-button { background: linear-gradient(135deg,#6ef3c5,#4ade80); border:none; color:#000; padding:12px 24px; border-radius:12px; font-weight:600; cursor:pointer; display:flex; align-items: center; gap:8px; transition: transform 0.2s ease, box-shadow 0.2s ease; font-size: 0.95rem; }
-button:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(110,243,197,0.3); }
-button:active { transform: translateY(0); }
-button:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-secondary { background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); }
-.btn-secondary:hover { background: rgba(255,255,255,0.15); box-shadow: 0 8px 20px rgba(255,255,255,0.1); }
-.editor-section { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 25px; }
-.editor-panel { background: rgba(255,255,255,0.05); border-radius:20px; padding:20px; backdrop-filter: blur(10px); box-shadow:0 8px 32px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08); }
-.editor-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-.editor-title { font-weight: 600; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; color: #6ef3c5; }
-.lang-badge { background: rgba(110,243,197,0.2); padding: 4px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 600; color: #6ef3c5; text-transform: uppercase; }
-#editor-container { height:500px; border-radius:12px; overflow:hidden; border:1px solid #1e293b; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
-.preview-container { height:500px; border-radius:12px; overflow:auto; border:1px solid #1e293b; background: #020617; position: relative; }
-.preview-iframe { width: 100%; height: 100%; border: none; background: white; border-radius: 12px; }
-.code-output { background:#020617; border-radius:12px; padding:20px; font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace; font-size: 0.9rem; line-height: 1.6; overflow-x: auto; max-height: 500px; overflow-y: auto; }
-.code-output pre { margin: 0; }
-.code-output code { color: #e5e7eb; }
-.cursor { display:inline-block; width:2px; height: 1.2em; background:#6ef3c5; animation:blink 1s infinite; margin-left: 2px; vertical-align: text-bottom; }
+header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+.brand { display:flex; align-items:center; gap:12px; font-size:1.5rem; font-weight:700; }
+.brand span { color:#6ef3c5; }
+.panel { background: rgba(255,255,255,0.05); border-radius:16px; padding:20px; backdrop-filter: blur(10px); box-shadow:0 0 40px rgba(0,0,0,0.4); margin-bottom:20px; }
+textarea { width:100%; height:120px; background:#020617; border:1px solid #1e293b; color:#e5e7eb; border-radius:12px; padding:15px; resize:none; }
+.actions { display:flex; justify-content:space-between; margin-top:12px; }
+button { background: linear-gradient(135deg,#6ef3c5,#4ade80); border:none; color:#000; padding:12px 18px; border-radius:12px; font-weight:600; cursor:pointer; display:flex; gap:8px; }
+.output { margin-top:20px; background:#020617; border-radius:16px; padding:20px; min-height:300px; border:1px solid #1e293b; }
+#editor-container { height:400px; border-radius:12px; overflow:hidden; border:1px solid #1e293b; }
+.cursor { display:inline-block; width:8px; background:#6ef3c5; animation:blink 1s infinite; }
 @keyframes blink { 50% { opacity:0; } }
-.stats { display: flex; gap: 20px; margin-top: 15px; flex-wrap: wrap; }
-.stat-item { background: rgba(255,255,255,0.05); padding: 10px 16px; border-radius: 10px; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,0.08); }
-.stat-item i { color: #6ef3c5; }
-.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #64748b; gap: 15px; }
-.empty-state i { width: 64px; height: 64px; opacity: 0.3; }
-.empty-state p { margin: 0; font-size: 1rem; }
-.tabs { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); }
-.tab { background: none; border: none; color: #64748b; padding: 10px 20px; cursor: pointer; font-weight: 600; border-bottom: 2px solid transparent; transition: all 0.3s ease; }
-.tab.active { color: #6ef3c5; border-bottom-color: #6ef3c5; }
-.tab:hover { color: #fff; }
-.loading-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(0,0,0,0.3); border-top-color: #000; border-radius: 50%; animation: spin 0.8s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.toast { position: fixed; bottom: 30px; right: 30px; background: linear-gradient(135deg,#6ef3c5,#4ade80); color: #000; padding: 15px 25px; border-radius: 12px; font-weight: 600; box-shadow: 0 8px 32px rgba(110,243,197,0.4); animation: slideIn 0.3s ease; z-index: 1000; display: flex; align-items: center; gap: 10px; }
-@keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-footer { margin-top:40px; text-align:center; opacity:0.5; font-size: 0.9rem; }
-@media (max-width: 1024px) {
-  .editor-section { grid-template-columns: 1fr; }
-}
-@media (max-width: 768px) {
-  .app { padding: 20px 15px; }
-  .brand { font-size: 1.4rem; }
-  .actions { flex-direction: column; }
-  button { width: 100%; justify-content: center; }
-}
+footer { margin-top:30px; text-align:center; opacity:0.6; }
 </style>
 </head>
 
@@ -96,23 +56,20 @@ footer { margin-top:40px; text-align:center; opacity:0.5; font-size: 0.9rem; }
 const { useState, useEffect, useRef } = React;
 
 function detectLanguage(code){
-  const trimmed = code.trim();
-  if(trimmed.startsWith("<!DOCTYPE") || trimmed.startsWith("<html")) return "html";
-  if(trimmed.startsWith("<")) return "html";
-  if(/import\s+React|export\s+default|function\s+\w+\(.*\)\s*{|const\s+\w+\s*=/.test(code)) return "javascript";
-  if(/interface\s+\w+|type\s+\w+\s*=/.test(code)) return "typescript";
-  if(/#include\s*<|std::|cout|cin/.test(code)) return "cpp";
-  if(/using\s+System;|namespace\s+\w+/.test(code)) return "csharp";
-  if(/public\s+class|static\s+void\s+main/.test(code)) return "java";
-  if(/def\s+\w+|print\(|import\s+\w+/.test(code)) return "python";
-  if(/\.css|{[\s\S]*:[\s\S]*;[\s\S]*}/.test(code)) return "css";
+  if(code.trim().startsWith("<")) return "html";
+  if(/import|export|function|const|let/.test(code)) return "javascript";
+  if(/interface|type\s+\w+/.test(code)) return "typescript";
+  if(/#include|std::/.test(code)) return "cpp";
+  if(/using System;|namespace/.test(code)) return "csharp";
+  if(/public class|static void main/.test(code)) return "java";
+  if(/def |print\(/.test(code)) return "python";
   return "plaintext";
 }
 
 function cleanCode(raw){
   return raw
-    .replace(/[a-zA-Z]*/g,"")
-    .replace(//g,"")
+    .replace(/```[a-zA-Z]*/g,"")
+    .replace(/```/g,"")
     .trim();
 }
 
@@ -120,248 +77,72 @@ function App(){
   const [prompt,setPrompt]=useState("");
   const [code,setCode]=useState("");
   const [loading,setLoading]=useState(false);
-  const [language,setLanguage]=useState("javascript");
-  const [activeTab,setActiveTab]=useState("editor");
-  const [showToast,setShowToast]=useState(false);
-  const [charCount,setCharCount]=useState(0);
-  const [lineCount,setLineCount]=useState(0);
   const editorRef=useRef(null);
-  const previewRef=useRef(null);
 
   useEffect(()=>{
     lucide.createIcons();
     require.config({paths:{vs:"https://cdn.jsdelivr.net/npm/monaco-editor@0.43.0/min/vs"}});
     require(["vs/editor/editor.main"],()=>{
       editorRef.current=monaco.editor.create(document.getElementById("editor-container"),{
-        value:"// Your generated code will appear here...",
+        value:"",
         language:"javascript",
         theme:"vs-dark",
-        automaticLayout:true,
-        fontSize: 14,
-        minimap: { enabled: true },
-        scrollBeyondLastLine: false,
-        wordWrap: "on"
-      });
-      
-      editorRef.current.onDidChangeModelContent(()=>{
-        const value = editorRef.current.getValue();
-        setCode(value);
-        updateStats(value);
-        if(language === "html") updatePreview(value);
+        automaticLayout:true
       });
     });
   },[]);
 
-  useEffect(()=>{
-    if(code && language === "html") updatePreview(code);
-  },[activeTab]);
-
-  function updateStats(text){
-    setCharCount(text.length);
-    setLineCount(text.split('\n').length);
-  }
-
-  function updatePreview(htmlCode){
-    if(previewRef.current && activeTab === "preview"){
-      const iframe = previewRef.current;
-      const doc = iframe.contentDocument || iframe.contentWindow.document;
-      doc.open();
-      doc.write(htmlCode);
-      doc.close();
-    }
-  }
-
   async function generateCode(){
-    if(!prompt.trim()) return;
-    
     setLoading(true);
     setCode("");
-    setActiveTab("editor");
     const systemPrompt="Return strictly code only. No markdown. No backticks. No text.";
 
-    try {
-      const response=await puter.ai.chat(
-        [{role:"system",content:systemPrompt},{role:"user",content:prompt}],
-        {model:"claude-sonnet-4-5",stream:true}
-      );
+    const response=await puter.ai.chat(
+      [{role:"system",content:systemPrompt},{role:"user",content:prompt}],
+      {model:"claude-sonnet-4-5",stream:true}
+    );
 
-      let buffer="";
-      for await(const part of response){
-        buffer+=part?.text||"";
-        const cleaned=cleanCode(buffer);
-        const lang=detectLanguage(cleaned);
-        setLanguage(lang);
-        setCode(cleaned);
-        if(editorRef.current){
-          editorRef.current.setValue(cleaned);
-          monaco.editor.setModelLanguage(editorRef.current.getModel(),lang);
-        }
-        updateStats(cleaned);
-      }
-
-      if(language === "html") updatePreview(code);
-    } catch(error) {
-      console.error("Generation error:", error);
-      setCode("// Error generating code. Please try again.");
+    let buffer="";
+    for await(const part of response){
+      buffer+=part?.text||"";
+      const cleaned=cleanCode(buffer);
+      const lang=detectLanguage(cleaned);
+      setCode(cleaned);
+      editorRef.current.setValue(cleaned);
+      monaco.editor.setModelLanguage(editorRef.current.getModel(),lang);
     }
 
+    setTimeout(()=>hljs.highlightAll(),200);
     setLoading(false);
   }
 
   function copyAll(){
     navigator.clipboard.writeText(code);
-    setShowToast(true);
-    setTimeout(()=>setShowToast(false), 2000);
+    alert("Copied!");
   }
-
-  function downloadCode(){
-    const extensions = {
-      javascript: "js",
-      typescript: "ts",
-      python: "py",
-      java: "java",
-      cpp: "cpp",
-      csharp: "cs",
-      html: "html",
-      css: "css"
-    };
-    const ext = extensions[language] || "txt";
-    const blob = new Blob([code], {type: "text/plain"});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `code.${ext}`;
-    a.click();
-    URL.revokeObjectURL(url);
-    setShowToast(true);
-    setTimeout(()=>setShowToast(false), 2000);
-  }
-
-  const isHTML = language === "html";
 
   return (
     <div className="app">
       <header>
-        <div className="brand">
-          <i data-lucide="code-2"></i> Re-Code <span>AI</span>
-        </div>
-        <div className="model-badge">
-          <i data-lucide="sparkles" style={{width:16,height:16}}></i>
-          Claude Sonnet 4.5
-        </div>
+        <div className="brand"><i data-lucide="code-2"></i> Re-Code <span>AI</span></div>
+        <div>Claude Sonnet</div>
       </header>
 
       <div className="panel">
-        <textarea 
-          value={prompt} 
-          onChange={e=>setPrompt(e.target.value)} 
-          placeholder="Describe the code you want to generate... (e.g., 'Create a responsive navbar with React')"
-          onKeyDown={e=>{if(e.key==="Enter"&&e.ctrlKey)generateCode()}}
-        />
+        <textarea value={prompt} onChange={e=>setPrompt(e.target.value)} placeholder="Describe the code you want…" />
         <div className="actions">
-          <button onClick={generateCode} disabled={loading||!prompt.trim()}>
-            {loading ? <><span className="loading-spinner"></span> Generating...</> : <><i data-lucide="sparkles" style={{width:18,height:18}}></i> Generate Code</>}
-          </button>
-          <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
-            <button className="btn-secondary" onClick={copyAll} disabled={!code}>
-              <i data-lucide="copy" style={{width:18,height:18}}></i> Copy
-            </button>
-            <button className="btn-secondary" onClick={downloadCode} disabled={!code}>
-              <i data-lucide="download" style={{width:18,height:18}}></i> Download
-            </button>
-          </div>
-        </div>
-        {code && (
-          <div className="stats">
-            <div className="stat-item">
-              <i data-lucide="file-code" style={{width:16,height:16}}></i>
-              <span>{lineCount} lines</span>
-            </div>
-            <div className="stat-item">
-              <i data-lucide="type" style={{width:16,height:16}}></i>
-              <span>{charCount} characters</span>
-            </div>
-            <div className="stat-item">
-              <i data-lucide="code" style={{width:16,height:16}}></i>
-              <span className="lang-badge">{language}</span>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="editor-section">
-        <div className="editor-panel">
-          <div className="editor-header">
-            <div className="editor-title">
-              <i data-lucide="code-2" style={{width:20,height:20}}></i>
-              Code Editor
-            </div>
-          </div>
-          <div id="editor-container"></div>
-        </div>
-
-        <div className="editor-panel">
-          <div className="editor-header">
-            <div className="tabs">
-              <button 
-                className={`tab ${activeTab==="editor"?"active":""}`}
-                onClick={()=>setActiveTab("editor")}
-              >
-                <i data-lucide="file-text" style={{width:16,height:16,display:"inline",verticalAlign:"middle",marginRight:5}}></i>
-                Raw Output
-              </button>
-              {isHTML && (
-                <button 
-                  className={`tab ${activeTab==="preview"?"active":""}`}
-                  onClick={()=>setActiveTab("preview")}
-                >
-                  <i data-lucide="eye" style={{width:16,height:16,display:"inline",verticalAlign:"middle",marginRight:5}}></i>
-                  Live Preview
-                </button>
-              )}
-            </div>
-          </div>
-          
-          {activeTab === "editor" ? (
-            <div className="preview-container">
-              {code ? (
-                <div className="code-output">
-                  <pre><code className={`language-${language}`}>{code}</code></pre>
-                  {loading && <span className="cursor"></span>}
-                </div>
-              ) : (
-                <div className="empty-state">
-                  <i data-lucide="file-code" style={{width:64,height:64}}></i>
-                  <p>Generated code will appear here</p>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="preview-container">
-              {code && isHTML ? (
-                <iframe ref={previewRef} className="preview-iframe" title="Live Preview"></iframe>
-              ) : (
-                <div className="empty-state">
-                  <i data-lucide="eye-off" style={{width:64,height:64}}></i>
-                  <p>Preview only available for HTML</p>
-                </div>
-              )}
-            </div>
-          )}
+          <button onClick={generateCode}>Generate</button>
+          <button onClick={copyAll}>Copy Output</button>
         </div>
       </div>
 
-      {showToast && (
-        <div className="toast">
-          <i data-lucide="check-circle" style={{width:20,height:20}}></i>
-          Success! Action completed.
-        </div>
-      )}
+      <div id="editor-container"></div>
 
-      <footer>
-        <i data-lucide="zap" style={{width:14,height:14,display:"inline",verticalAlign:"middle",marginRight:5}}></i>
-        © 2024 Re-EL • Re-Code Advanced AI • Powered by Claude
-      </footer>
+      <div className="output">
+        <pre><code>{code}</code>{loading && <span className="cursor"></span>}</pre>
+      </div>
+
+      <footer>© Re-EL • Re-Code Advanced AI</footer>
     </div>
   );
 }
