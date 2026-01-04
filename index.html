@@ -82,17 +82,30 @@ function App() {
     setLoading(true);
     setCode("");
     setPreview("");
+
     try{
-      const response = await puter.ai.chat(prompt,{model:"claude-sonnet-4-5",stream:true});
+      const systemPrompt = "You are a coding assistant. Return strictly code only. Do NOT include explanations, comments, or any text. Only output valid code.";
+
+      const response = await puter.ai.chat(
+        [
+          {role:"system", content: systemPrompt},
+          {role:"user", content: prompt}
+        ],
+        {model:"claude-sonnet-4-5", stream:true}
+      );
+
       let buffer = "";
       for await(const part of response){
         buffer += part?.text || "";
         setCode(buffer);
         if(editorRef.current) editorRef.current.setValue(buffer);
       }
+
       // Highlight.js formatting
       setTimeout(()=>hljs.highlightAll(),200);
+
       setPreview(buffer);
+
     } catch(err){
       setCode("⚠️ Error generating code.");
     } finally { setLoading(false); }
