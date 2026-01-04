@@ -1,236 +1,157 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Re-Code | Re-EL’s Advanced Coding AI</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8" />
+<title>Re-Code | Re-EL’s Advanced Coding AI</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- React + Babel CDN -->
-  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<!-- React + Babel CDN -->
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <!-- Puter JS -->
-  <script src="https://js.puter.com/v2/"></script>
+<!-- Puter JS -->
+<script src="https://js.puter.com/v2/"></script>
 
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
+<!-- Lucide Icons -->
+<script src="https://unpkg.com/lucide@latest"></script>
 
-  <!-- Animations -->
-  <style>
-    * { box-sizing: border-box; }
+<!-- Monaco Editor -->
+<link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdn.jsdelivr.net/npm/monaco-editor@0.43.0/min/vs/editor/editor.main.css" />
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.43.0/min/vs/loader.js"></script>
 
-    body {
-      margin: 0;
-      font-family: Inter, system-ui, sans-serif;
-      background: radial-gradient(circle at top, #0b0f1a, #000);
-      color: #fff;
-      overflow-x: hidden;
-    }
+<!-- Highlight.js (for code formatting) -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
 
-    .app {
-      max-width: 1200px;
-      margin: auto;
-      padding: 30px;
-      animation: fadeIn 0.8s ease;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 20px;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 1.5rem;
-      font-weight: 700;
-    }
-
-    .brand span {
-      color: #6ef3c5;
-    }
-
-    .panel {
-      background: rgba(255,255,255,0.05);
-      border-radius: 16px;
-      padding: 20px;
-      backdrop-filter: blur(10px);
-      box-shadow: 0 0 40px rgba(0,0,0,0.4);
-    }
-
-    textarea {
-      width: 100%;
-      height: 140px;
-      background: #020617;
-      border: 1px solid #1e293b;
-      color: #e5e7eb;
-      border-radius: 12px;
-      padding: 15px;
-      font-size: 0.95rem;
-      resize: none;
-    }
-
-    textarea:focus {
-      outline: none;
-      border-color: #6ef3c5;
-      box-shadow: 0 0 0 2px rgba(110,243,197,0.2);
-    }
-
-    .actions {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 12px;
-    }
-
-    button {
-      background: linear-gradient(135deg, #6ef3c5, #4ade80);
-      border: none;
-      color: #000;
-      padding: 12px 18px;
-      border-radius: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(110,243,197,0.4);
-    }
-
-    button:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    .output {
-      margin-top: 20px;
-      background: #020617;
-      border-radius: 16px;
-      padding: 20px;
-      min-height: 250px;
-      font-family: "Fira Code", monospace;
-      white-space: pre-wrap;
-      overflow-y: auto;
-      border: 1px solid #1e293b;
-      animation: glow 2s infinite alternate;
-    }
-
-    @keyframes glow {
-      from { box-shadow: 0 0 10px rgba(110,243,197,0.1); }
-      to { box-shadow: 0 0 25px rgba(110,243,197,0.25); }
-    }
-
-    .cursor {
-      display: inline-block;
-      width: 8px;
-      background: #6ef3c5;
-      margin-left: 3px;
-      animation: blink 1s infinite;
-    }
-
-    @keyframes blink {
-      50% { opacity: 0; }
-    }
-
-    footer {
-      margin-top: 30px;
-      text-align: center;
-      opacity: 0.6;
-      font-size: 0.85rem;
-    }
-  </style>
+<!-- Animations + Styling -->
+<style>
+* { box-sizing: border-box; }
+body { margin:0; font-family: Inter, system-ui, sans-serif; background: radial-gradient(circle at top, #0b0f1a, #000); color: #fff; }
+.app { max-width: 1200px; margin: auto; padding: 30px; animation: fadeIn 0.8s ease; }
+@keyframes fadeIn { from {opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+.brand { display:flex; align-items:center; gap:12px; font-size:1.5rem; font-weight:700; }
+.brand span { color:#6ef3c5; }
+.panel { background: rgba(255,255,255,0.05); border-radius:16px; padding:20px; backdrop-filter: blur(10px); box-shadow:0 0 40px rgba(0,0,0,0.4); margin-bottom:20px; }
+textarea { width:100%; height:120px; background:#020617; border:1px solid #1e293b; color:#e5e7eb; border-radius:12px; padding:15px; font-size:0.95rem; resize:none; }
+textarea:focus { outline:none; border-color:#6ef3c5; box-shadow:0 0 0 2px rgba(110,243,197,0.2);}
+.actions { display:flex; justify-content:space-between; margin-top:12px; }
+button { background: linear-gradient(135deg,#6ef3c5,#4ade80); border:none; color:#000; padding:12px 18px; border-radius:12px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:8px; transition: transform 0.2s ease, box-shadow 0.2s ease;}
+button:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(110,243,197,0.4);}
+button:disabled { opacity:0.6; cursor:not-allowed;}
+.output { margin-top:20px; background:#020617; border-radius:16px; padding:20px; min-height:300px; font-family:"Fira Code", monospace; white-space:pre-wrap; overflow-y:auto; border:1px solid #1e293b; animation: glow 2s infinite alternate;}
+@keyframes glow { from { box-shadow:0 0 10px rgba(110,243,197,0.1);} to{ box-shadow:0 0 25px rgba(110,243,197,0.25); } }
+.cursor { display:inline-block; width:8px; background:#6ef3c5; margin-left:3px; animation:blink 1s infinite; }
+@keyframes blink { 50% { opacity:0; } }
+#editor-container { height:400px; border-radius:12px; overflow:hidden; border:1px solid #1e293b; }
+footer { margin-top:30px; text-align:center; opacity:0.6; font-size:0.85rem;}
+</style>
 </head>
-
 <body>
-  <div id="root"></div>
+<div id="root"></div>
 
-  <script type="text/babel">
-    const { useState, useEffect } = React;
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
 
-    function App() {
-      const [prompt, setPrompt] = useState("");
-      const [output, setOutput] = useState("");
-      const [loading, setLoading] = useState(false);
+function App() {
+  const [prompt,setPrompt] = useState("");
+  const [loading,setLoading] = useState(false);
+  const [code,setCode] = useState("");
+  const [preview,setPreview] = useState("");
+  const editorRef = useRef(null);
 
-      useEffect(() => {
-        lucide.createIcons();
-      }, []);
+  useEffect(() => {
+    lucide.createIcons();
 
-      async function generateCode() {
-        if (!prompt.trim()) return;
-        setLoading(true);
-        setOutput("");
+    // Monaco loader
+    require.config({ paths: { vs: "https://cdn.jsdelivr.net/npm/monaco-editor@0.43.0/min/vs" } });
+    require(["vs/editor/editor.main"], function () {
+      editorRef.current = monaco.editor.create(document.getElementById("editor-container"), {
+        value: "",
+        language: "javascript",
+        theme: "vs-dark",
+        automaticLayout: true,
+        minimap: { enabled: false }
+      });
+    });
+  }, []);
 
-        try {
-          const response = await puter.ai.chat(
-            prompt,
-            { model: "claude-sonnet-4-5", stream: true }
-          );
-
-          for await (const part of response) {
-            setOutput(prev => prev + (part?.text || ""));
-          }
-        } catch (err) {
-          setOutput("⚠️ Error generating code. Please try again.");
-        } finally {
-          setLoading(false);
-        }
+  async function generateCode() {
+    if(!prompt.trim()) return;
+    setLoading(true);
+    setCode("");
+    setPreview("");
+    try{
+      const response = await puter.ai.chat(prompt,{model:"claude-sonnet-4-5",stream:true});
+      let buffer = "";
+      for await(const part of response){
+        buffer += part?.text || "";
+        setCode(buffer);
+        if(editorRef.current) editorRef.current.setValue(buffer);
       }
+      // Highlight.js formatting
+      setTimeout(()=>hljs.highlightAll(),200);
+      setPreview(buffer);
+    } catch(err){
+      setCode("⚠️ Error generating code.");
+    } finally { setLoading(false); }
+  }
 
-      return (
-        <div className="app">
-          <header>
-            <div className="brand">
-              <i data-lucide="code-2"></i>
-              <div>
-                Re-Code <span>AI</span>
-              </div>
-            </div>
-            <div style={{opacity:0.7}}>Powered by Claude Sonnet</div>
-          </header>
+  function copyCode(){
+    navigator.clipboard.writeText(code);
+    alert("Code copied to clipboard!");
+  }
 
-          <div className="panel">
-            <textarea
-              placeholder="Describe the code you want… (e.g. Build a Firebase auth React app with Tailwind)"
-              value={prompt}
-              onChange={e => setPrompt(e.target.value)}
-            />
-
-            <div className="actions">
-              <div></div>
-              <button onClick={generateCode} disabled={loading}>
-                <i data-lucide="sparkles"></i>
-                {loading ? "Generating…" : "Generate Code"}
-              </button>
-            </div>
-          </div>
-
-          <div className="output">
-            {output}
-            {loading && <span className="cursor"></span>}
-          </div>
-
-          <footer>
-            © Re-EL • Re-Code Advanced Coding AI
-          </footer>
+  return (
+    <div className="app">
+      <header>
+        <div className="brand">
+          <i data-lucide="code-2"></i>
+          <div>Re-Code <span>AI</span></div>
         </div>
-      );
-    }
+        <div style={{opacity:0.7}}>Powered by Claude Sonnet</div>
+      </header>
 
-    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
-  </script>
+      <div className="panel">
+        <textarea
+          placeholder="Describe the code you want… (JS, React, Firebase, HTML/CSS)"
+          value={prompt}
+          onChange={e=>setPrompt(e.target.value)}
+        />
+        <div className="actions">
+          <button onClick={generateCode} disabled={loading}>
+            <i data-lucide="sparkles"></i> {loading?"Generating…":"Generate Code"}
+          </button>
+          <button onClick={copyCode} disabled={!code}>
+            <i data-lucide="copy"></i> Copy
+          </button>
+        </div>
+      </div>
+
+      <div id="editor-container"></div>
+
+      <div className="output">
+        <pre><code className="javascript">{code}</code>{loading && <span className="cursor"></span>}</pre>
+      </div>
+
+      <div className="panel" style={{marginTop:"20px"}}>
+        <h3>Live Preview</h3>
+        <iframe
+          title="preview"
+          style={{width:"100%",height:"300px",borderRadius:"12px",border:"1px solid #1e293b"}}
+          srcDoc={preview}
+        ></iframe>
+      </div>
+
+      <footer>
+        © Re-EL • Re-Code Advanced AI
+      </footer>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
 </body>
 </html>
