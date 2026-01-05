@@ -6,35 +6,34 @@ export default function ReCodeClaude() {
   const [prompt, setPrompt] = useState("React dashboard with Tailwind charts");
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
-  const iframeRef = useRef(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);  // ✅ FIXED: Proper typing
   const [previewSrc, setPreviewSrc] = useState("");
 
   async function generateAndPreview() {
-  setLoading(true);
-  setCode("");
+    setLoading(true);
+    setCode("");
 
-  const response = await fetch("/api/claude/stream", {
-    method: "POST",
-    body: JSON.stringify({ prompt }),
-    headers: { "Content-Type": "application/json" },
-  });
+    const response = await fetch("/api/claude/stream", {
+      method: "POST",
+      body: JSON.stringify({ prompt }),
+      headers: { "Content-Type": "application/json" },
+    });
 
-  const reader = response.body?.getReader();
-  const decoder = new TextDecoder();
-  
-  while (true) {
-    if (!reader) break;  // ✅ SAFETY CHECK
-    const { done, value } = await reader.read();  // ✅ NO OPTIONAL CHAINING
-    if (done) break;
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
     
-    const chunk = decoder.decode(value, { stream: true });
-    setCode((prev) => prev + chunk);
+    while (true) {
+      if (!reader) break;
+      const { done, value } = await reader.read();
+      if (done) break;
+      
+      const chunk = decoder.decode(value, { stream: true });
+      setCode((prev) => prev + chunk);
+    }
+    
+    setLoading(false);
+    updatePreview();
   }
-  
-  setLoading(false);
-  updatePreview();
-}
-
 
   const updatePreview = () => {
     if (code) {
@@ -42,6 +41,7 @@ export default function ReCodeClaude() {
       const url = URL.createObjectURL(blob);
       setPreviewSrc(url);
       
+      // ✅ FIXED: Safe iframeRef access with proper typing
       if (iframeRef.current?.src) {
         URL.revokeObjectURL(iframeRef.current.src);
       }
