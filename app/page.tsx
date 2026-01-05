@@ -1,3 +1,5 @@
+export const runtime = 'nodejs';  // Before 'use client';
+
 'use client';
 import { useState, useRef, useEffect } from 'react';
 
@@ -99,7 +101,7 @@ export default function ReCodeClaude() {
                 ref={iframeRef}
                 src={previewSrc}
                 className="w-full h-96 lg:h-[500px] bg-white rounded-2xl shadow-2xl border-4 border-white/20"
-                sandbox="allow-scripts allow-same-origin"
+                sandbox="allow-scripts"
               />
             ) : (
               <div className="w-full h-96 lg:h-[500px] bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-2xl border-2 border-dashed border-white/20 flex items-center justify-center backdrop-blur-lg shadow-xl">
