@@ -294,7 +294,24 @@ function generateSmartFilename(prompt, code, lang) {
     return `${name}.${ext}`;
 }
 
-
+async function ensurePuterAuth() {
+    try {
+        // Attempt to get user info. 
+        // A 401 error here is caught by the catch block below.
+        const user = await puter.auth.whoami();
+        if (user && user.username) {
+            return user;
+        }
+        throw new Error("Not authenticated");
+    } catch (error) {
+        console.warn("Auth required (401 seen), requesting sign-in...");
+        
+       
+        
+        // Retry once after sign-in
+        return await puter.auth.whoami();
+    }
+}
 
 function App() {
     const [prompt, setPrompt] = useState("");
@@ -396,6 +413,8 @@ function App() {
             showToast("Please enter a prompt to generate code", "warning");
             return;
         }
+       // This MUST be called inside a click handler to work
+        await puter.auth.signIn();
         continueGeneration();
     }
 
