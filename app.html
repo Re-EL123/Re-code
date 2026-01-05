@@ -318,6 +318,17 @@ function estimateCost(tokens){
   return Math.ceil(tokens/50);
 }
 
+  async function ensurePuterAuth() {
+  try {
+    const user = await puter.auth.whoami();
+    return user;
+  } catch {
+    await puter.auth.signIn();
+    return await puter.auth.whoami();
+  }
+}
+
+
 function App(){
   const [prompt,setPrompt]=useState("");
   const [filename,setFilename]=useState("");
@@ -448,6 +459,7 @@ function App(){
   }
 
   async function autoContinueIfNeeded(buffer,language,continueCount){
+    
     // Safety limit: max 5 auto-continuations
     if(continueCount>=5){
       showToast("⚠️ Reached maximum auto-continue limit (5 attempts)","warning");
@@ -516,6 +528,8 @@ function App(){
   }
 
   async function continueGeneration(){
+    await ensurePuterAuth();
+
     closeModal();
     setLoading(true);
     setProgress(0);
@@ -697,6 +711,8 @@ function App(){
   }
 
   async function continueActiveFile(){
+    await ensurePuterAuth();
+
     if(!activeFile){
       showToast("No file selected","warning");
       return;
