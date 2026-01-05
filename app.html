@@ -168,7 +168,7 @@ const {useState,useEffect,useRef}=React;
 
 // Storage Manager (uses in-memory but structured for easy localStorage conversion)
 const storage={
-  data:{files:[],credits:100,activeFileId:null},
+  data:{files:[],credits:1000,activeFileId:null},
   save(){
     // In-memory storage (persists during browser session)
     // To enable localStorage, uncomment:
@@ -237,12 +237,17 @@ function estimateTokens(text){
   return Math.ceil(text.length/4);
 }
 
+function estimateCost(tokens){
+  // More generous: ~50 tokens per credit (200 chars per credit)
+  return Math.ceil(tokens/50);
+}
+
 function App(){
   const [prompt,setPrompt]=useState("");
   const [filename,setFilename]=useState("");
   const [loading,setLoading]=useState(false);
-  const [credits,setCredits]=useState(100);
-  const [maxCredits]=useState(100);
+  const [credits,setCredits]=useState(1000);
+  const [maxCredits]=useState(1000);
   const [toast,setToast]=useState(null);
   const [modal,setModal]=useState(null);
   const [progress,setProgress]=useState(0);
@@ -318,9 +323,9 @@ function App(){
     showToast("Filename generated!","success");
   }
 
-  const estimatedCost=Math.ceil(estimateTokens(prompt)/10);
+  const estimatedCost=estimateCost(estimateTokens(prompt));
   const creditPercent=(credits/maxCredits)*100;
-  const creditStatus=creditPercent<=20?"danger":creditPercent<=50?"warning":"normal";
+  const creditStatus=creditPercent<=10?"danger":creditPercent<=30?"warning":"normal";
 
   async function generate(){
     if(!prompt.trim()){
@@ -328,7 +333,7 @@ function App(){
       return;
     }
 
-    const estimatedCost=Math.ceil(estimateTokens(prompt)/10);
+    const estimatedCost=estimateCost(estimateTokens(prompt));
     
     if(credits<=0){
       showModal(
@@ -350,7 +355,7 @@ function App(){
       return;
     }
 
-    if(credits<=20){
+    if(credits<=100){
       showModal(
         "Low Credits Warning",
         `You have ${credits} credits remaining. This generation will cost approximately ${estimatedCost} credits. Continue anyway?`,
@@ -369,7 +374,15 @@ function App(){
     setProgress(0);
     
     let buffer="";
-    const system="You are an expert code generator. Return strictly code only, fully complete and functional. No markdown formatting, no explanations, no text outside code. Ensure the code is production-ready and well-structured.";
+    const system=`You are an elite code generation expert. Generate production-ready, fully functional code with these requirements:
+- Write complete, working code with NO placeholders or TODOs
+- Include proper error handling and edge cases
+- Use best practices and clean code principles
+- Add helpful comments for complex logic
+- Ensure code is optimized and efficient
+- Make it maintainable and scalable
+- Return ONLY code - no markdown, no explanations, no text outside code
+- Complete all functions, classes, and statements fully`;
 
     try{
       const progressInterval=setInterval(()=>{
@@ -391,7 +404,7 @@ function App(){
         editorRef.current.setValue(cleaned);
 
         if(chunkCount%10===0){
-          const currentCost=Math.ceil(cleaned.length/150);
+          const currentCost=Math.ceil(cleaned.length/200); // More generous
           if(credits-currentCost<=0){
             showToast("Credits exhausted during generation!","warning");
             break;
@@ -451,7 +464,7 @@ function App(){
       setPrompt("");
       setFilename("");
 
-      if(newCredits<=20&&newCredits>0){
+      if(newCredits<=100&&newCredits>0){
         setTimeout(()=>{
           showModal(
             "Low Credits Alert",
@@ -558,7 +571,14 @@ function App(){
     showToast("Continuing code generation...","info");
 
     let buffer=activeFile.content;
-    const system="You are an expert code generator. Continue the code EXACTLY where it stops. Complete all open tags, functions, and statements. Return only code, no explanations.";
+    const system=`You are an elite code generation expert. Continue the code with these quality standards:
+- Write complete, working code with NO placeholders
+- Maintain the existing code style and patterns
+- Include proper error handling
+- Use best practices and clean code principles
+- Complete all open functions, tags, and statements
+- Return ONLY code - no explanations, no markdown
+- Ensure the continuation is production-ready`;
 
     try{
       const progressInterval=setInterval(()=>{
@@ -585,11 +605,11 @@ function App(){
       const updatedFile={...activeFile,content:final,size:final.length};
       setFiles(prev=>prev.map(f=>f.id===activeFile.id?updatedFile:f));
 
-      const cost=Math.ceil((final.length-activeFile.size)/150);
+      const cost=Math.ceil((final.length-activeFile.size)/200); // More generous
       setCredits(prev=>Math.max(prev-cost,0));
 
       setProgress(100);
-      showToast(`Code continued successfully! Used ${cost} credits.`,"success");
+      showToast(`✨ Code continued successfully! Used ${cost} credits.`,"success");
 
     }catch(e){
       showToast("Continue failed: "+e.message,"error");
@@ -600,8 +620,8 @@ function App(){
   }
 
   function resetCredits(){
-    setCredits(100);
-    showToast("Credits reset to 100","success");
+    setCredits(1000);
+    showToast("Credits reset to 1000","success");
   }
 
   function clearAllFiles(){
@@ -626,6 +646,7 @@ function App(){
         <div className="brand">
           <i data-lucide="code-2"></i>
           Re-Code AI
+          <span style={{fontSize:"0.7rem",background:"rgba(110,243,197,.2)",padding:"4px 10px",borderRadius:"8px",marginLeft:"8px",color:"#6ef3c5",fontWeight:600}}>PREMIUM</span>
         </div>
         <div className="credit-section">
           <div className={`credit-display ${creditStatus}`}>
@@ -700,6 +721,10 @@ function App(){
               <div className="prompt-label">
                 <i data-lucide="message-square"></i>
                 What would you like to build?
+                <span style={{marginLeft:"auto",fontSize:"0.75rem",background:"rgba(110,243,197,.15)",padding:"4px 10px",borderRadius:"6px",color:"#6ef3c5",display:"flex",alignItems:"center",gap:"4px"}}>
+                  <i data-lucide="shield-check" style={{width:"14px",height:"14px"}}></i>
+                  Quality Mode
+                </span>
               </div>
               <textarea 
                 value={prompt} 
@@ -728,6 +753,8 @@ function App(){
                   <span>Estimated cost: <span className="token-cost">~{estimatedCost} credits</span></span>
                   <span>•</span>
                   <span>Remaining after: <span className="token-cost">{Math.max(credits-estimatedCost,0)} credits</span></span>
+                  <span>•</span>
+                  <span style={{color:"#6ef3c5"}}>✨ Quality assured</span>
                 </div>
               )}
             </div>
@@ -792,6 +819,10 @@ function App(){
               <div className="stat-item">
                 <i data-lucide="zap"></i>
                 <span>Credits Used: <span className="stat-value">{maxCredits-credits}</span></span>
+              </div>
+              <div className="stat-item" style={{color:"#6ef3c5"}}>
+                <i data-lucide="shield-check"></i>
+                <span>Quality: <span className="stat-value">Premium</span></span>
               </div>
             </div>
           </div>
