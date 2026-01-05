@@ -23,8 +23,10 @@ export default function ReCodeClaude() {
     const decoder = new TextDecoder();
     
     while (true) {
-      const { done, value } = await reader?.read();
-      if (done) break;
+  if (!reader) break;
+  const { done, value } = await reader.read();  // ✅ FIXED
+  if (done) break;
+
       
       const chunk = decoder.decode(value, { stream: true });
       setCode((prev) => prev + chunk);
