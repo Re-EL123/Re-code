@@ -182,9 +182,15 @@ const storage={
 };
 
 function cleanCode(raw){
-  return raw.replace(/```[\s\S]*?```/g,m=>m.replace(/```[\w]*\n?|```/g,""))
-            .replace(/```/g,"")
-            .trim();
+  return raw
+    .replace(/```[\s\S]*?```/g,m=>m.replace(/```[\w]*\n?|```/g,""))
+    .replace(/```/g,"")
+    // Remove AI explanations that leak into code
+    .replace(/I don't see any previous code.*$/s,'')
+    .replace(/Could you please share.*$/s,'')
+    .replace(/I'll continue.*$/s,'')
+    .replace(/Let me continue.*$/s,'')
+    .trim();
 }
 
 function detectLanguage(code){
@@ -536,6 +542,63 @@ function App(){
     showToast("Code copied to clipboard!","success");
   }
 
+  async function continueActiveFile(){
+    if(!activeFile){
+      showToast("No file selected","warning");
+      return;
+    }
+
+    if(credits<=0){
+      showToast("No credits remaining","error");
+      return;
+    }
+
+    setLoading(true);
+    setProgress(0);
+    showToast("Continuing code generation...","info");
+
+    let buffer=activeFile.content;
+    const system="You are an expert code generator. Continue the code EXACTLY where it stops. Complete all open tags, functions, and statements. Return only code, no explanations.";
+
+    try{
+      const progressInterval=setInterval(()=>{
+        setProgress(p=>Math.min(p+2,95));
+      },100);
+
+      // Get last 800 chars for context
+      const context=buffer.slice(-800);
+      
+      const cont=await puter.ai.chat([
+        {role:"system",content:system},
+        {role:"user",content:`Continue this code EXACTLY where it stops:\n\n${context}\n\nComplete all open tags, functions, and statements.`}
+      ],{model:"claude-sonnet-4-20250514",stream:true});
+
+      for await(const part of cont){
+        buffer+=part?.text||"";
+        const cleaned=cleanCode(buffer);
+        editorRef.current.setValue(cleaned);
+      }
+
+      clearInterval(progressInterval);
+
+      const final=cleanCode(buffer);
+      const updatedFile={...activeFile,content:final,size:final.length};
+      setFiles(prev=>prev.map(f=>f.id===activeFile.id?updatedFile:f));
+
+      const cost=Math.ceil((final.length-activeFile.size)/150);
+      setCredits(prev=>Math.max(prev-cost,0));
+
+      setProgress(100);
+      showToast(`Code continued successfully! Used ${cost} credits.`,"success");
+
+    }catch(e){
+      showToast("Continue failed: "+e.message,"error");
+    }
+
+    setLoading(false);
+    setProgress(0);
+  }
+
   function resetCredits(){
     setCredits(100);
     showToast("Credits reset to 100","success");
@@ -678,6 +741,12 @@ function App(){
                 <i data-lucide="copy"></i>
                 <span>Copy</span>
               </button>
+              {activeFile&&(
+                <button className="secondary" onClick={continueActiveFile} disabled={loading}>
+                  <i data-lucide="play-circle"></i>
+                  <span>Continue Code</span>
+                </button>
+              )}
             </div>
 
             <div className={`progress-container ${loading?"active":""}`}>
