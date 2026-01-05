@@ -336,7 +336,7 @@ function App() {
                 // Only create editor if it doesn't exist
                 if (!editorRef.current && document.getElementById("editor")) {
                     editorRef.current = monaco.editor.create(document.getElementById("editor"), {
-                        value: "// Your generated code will appear here\n// Start by entering a prompt and clicking Generate!\n// Powered by Free, Unlimited Claude API via Puter",
+                        value: "// Your generated code will appear here\n// Start by entering a prompt and clicking Generate!\n",
                         language: "plaintext",
                         theme: "vs-dark",
                         automaticLayout: true,
@@ -430,7 +430,7 @@ function App() {
             const cont = await puter.ai.chat([
                 { role: "system", content: system },
                 { role: "user", content: `Continue this code EXACTLY where it stops. DO NOT restart or explain, just continue:\n\n${context}\n\nComplete all open tags, functions, and statements.` }
-            ], { model: "claude-sonnet-4-20250514", stream: true });
+            ], { model: "claude-sonnet-4-5", stream: true });
 
             let newBuffer = buffer;
             for await (const part of cont) {
@@ -489,7 +489,7 @@ function App() {
             const res = await puter.ai.chat([
                 { role: "system", content: system },
                 { role: "user", content: prompt }
-            ], { model: "claude-sonnet-4-20250514", stream: true });
+            ], { model: "claude-sonnet-4-5", stream: true });
 
             for await (const part of res) {
                 const text = part?.text || "";
@@ -646,7 +646,7 @@ function App() {
             const cont = await puter.ai.chat([
                 { role: "system", content: system },
                 { role: "user", content: `Continue this code EXACTLY where it stops:\n\n${context}\n\nComplete all open tags, functions, and statements.` }
-            ], { model: "claude-sonnet-4-20250514", stream: true });
+            ], { model: "claude-sonnet-4-5", stream: true });
 
             for await (const part of cont) {
                 buffer += part?.text || "";
