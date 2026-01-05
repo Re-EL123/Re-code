@@ -288,7 +288,7 @@ function App(){
   },[]);
 
   // Auto-continue monitor: watches for editor stalls during generation
-  // If no changes detected for 15 seconds, saves code buffer and triggers continuation
+  // If no changes detected for 90 seconds, saves code buffer, clears old auth, and triggers continuation with fresh token
   useEffect(()=>{
     if(loading&&generationActiveRef.current){
       lastEditorChangeRef.current=Date.now();
@@ -296,13 +296,13 @@ function App(){
       editorCheckIntervalRef.current=setInterval(()=>{
         const timeSinceLastChange=Date.now()-lastEditorChangeRef.current;
         
-        // If editor hasn't changed in 15 seconds, trigger auto-continue
-        if(timeSinceLastChange>=15000&&!autoContinueActive){
-          console.log("⚠️ Editor stalled for 15s - triggering auto-continue with fresh auth");
+        // If editor hasn't changed in 90 seconds, trigger auto-continue
+        if(timeSinceLastChange>=90000&&!autoContinueActive){
+          console.log("⚠️ Editor stalled for 90s - triggering auto-continue with fresh auth");
           setAutoContinueActive(true);
           autoResumeGeneration();
         }
-      },1000); // Check every second
+      },2000); // Check every 2 seconds
       
       return()=>{
         if(editorCheckIntervalRef.current){
@@ -368,18 +368,70 @@ function App(){
     const currentCode=editorRef.current.getValue();
     savedCodeBufferRef.current=currentCode;
     
-    showToast("🔄 Refreshing connection & auto-continuing...","info");
+    showToast("🔄 Refreshing auth & auto-continuing...","info");
     
-    // Refresh Puter connection and create new token
+    // Refresh Puter connection - remove old token and create new one
     try{
-      // Reinitialize Puter to get fresh auth token
       if(window.puter){
-        console.log("♻️ Reinitializing Puter AI connection...");
-        // Puter SDK handles token refresh internally
-        await new Promise(resolve=>setTimeout(resolve,500));
+        console.log("♻️ Removing old auth token and requesting fresh authentication...");
+        
+        // Clear any existing auth tokens
+        try{
+          // Clear Puter's stored authentication
+          if(window.puter.authToken){
+            delete window.puter.authToken;
+          }
+          // Clear from localStorage if Puter uses it
+          const puterKeys=['puter.auth','puter.token','puter_auth_token'];
+          puterKeys.forEach(key=>{
+            try{
+              if(typeof localStorage!=='undefined'){
+                localStorage.removeItem(key);
+              }
+            }catch(e){}
+          });
+        }catch(clearErr){
+          console.warn("Token clear warning:",clearErr);
+        }
+        
+        // Rerun auth flow with embedded popup
+        console.log("🔐 Initiating new auth flow...");
+        showToast("🔐 Opening auth popup - please approve...","info");
+        
+        const authPopup=window.open(
+          'https://puter.com/?embedded_in_popup=true&request_auth=true',
+          'PuterAuth',
+          'width=600,height=700,left=200,top=100'
+        );
+        
+        // Wait for auth to complete (popup will close automatically)
+        await new Promise((resolve,reject)=>{
+          const checkClosed=setInterval(()=>{
+            if(authPopup&&authPopup.closed){
+              clearInterval(checkClosed);
+              console.log("✅ Auth popup closed - new token should be ready");
+              showToast("✅ Auth refreshed successfully!","success");
+              resolve();
+            }
+          },500);
+          
+          // Timeout after 30 seconds
+          setTimeout(()=>{
+            clearInterval(checkClosed);
+            if(authPopup&&!authPopup.closed){
+              authPopup.close();
+            }
+            resolve(); // Continue anyway
+          },30000);
+        });
+        
+        // Give Puter SDK time to process new auth
+        await new Promise(resolve=>setTimeout(resolve,1000));
+        console.log("✅ Fresh auth token ready");
       }
     }catch(authErr){
       console.warn("Auth refresh warning:",authErr);
+      showToast("Auth refresh had issues, attempting continue anyway...","warning");
     }
     
     // Get last 1000 chars for context
@@ -433,11 +485,20 @@ function App(){
       
       // Retry once with fresh connection
       if(!e.retried){
-        console.log("🔄 Retrying with fresh connection...");
-        showToast("Retrying auto-continue...","warning");
+        console.log("🔄 Retrying with fresh auth and connection...");
+        showToast("Retrying with fresh authentication...","warning");
         
         setTimeout(async()=>{
           try{
+            // Clear old token and reauth for retry
+            try{
+              if(window.puter?.authToken){
+                delete window.puter.authToken;
+              }
+            }catch(clearErr){}
+            
+            await new Promise(resolve=>setTimeout(resolve,500));
+            
             const retryContext=savedCodeBufferRef.current.slice(-1000);
             const retryCont=await puter.ai.chat([
               {role:"system",content:system},
@@ -871,7 +932,7 @@ function App(){
                 What would you like to build?
                 <span style={{marginLeft:"auto",fontSize:"0.75rem",background:"rgba(110,243,197,.15)",padding:"4px 10px",borderRadius:"6px",color:"#6ef3c5",display:"flex",alignItems:"center",gap:"4px"}}>
                   <i data-lucide="shield-check" style={{width:"14px",height:"14px"}}></i>
-                  Auto-Continue (15s)
+                  Auto-Continue (90s)
                 </span>
               </div>
               <textarea 
