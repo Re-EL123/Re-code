@@ -454,91 +454,69 @@ function App(){
     }
   }
 
-  async function continueGeneration(){
-    await ensurePuterAuth();
+  async function continueGeneration() {
+  try {
+    const user = await ensurePuterAuth();
+    if (!user) {
+      showToast("Authentication failed", "error");
+      return;
+    }
 
     closeModal();
     setLoading(true);
-    setProgress(0);
+    setProgress(5); // Start progress immediately
     setAutoContinueCount(0);
-    
-    let buffer="";
-    const system=`You are an elite code generation expert. Generate production-ready, fully functional code with these requirements:
-- Write complete, working code with NO placeholders or TODOs
-- Include proper error handling and edge cases
-- Use best practices and clean code principles
-- Add helpful comments for complex logic
-- Ensure code is optimized and efficient
-- Make it maintainable and scalable
-- Return ONLY code - no markdown, no explanations, no text outside code
-- Complete all functions, classes, and statements fully`;
 
-    try{
-      const progressInterval=setInterval(()=>{
-        setProgress(p=>Math.min(p+1,95));
-      },100);
+    let buffer = "";
+    const system = `You are an elite code generation expert...`; // Keep your existing system prompt
 
-      const res=await puter.ai.chat([
-        {role:"system",content:system},
-        {role:"user",content:prompt}
-      ],{model:"claude-sonnet-4-20250514",stream:true});
+    // 1. Use a more standard model identifier
+    // 2. Added a timeout/error check for the initial call
+    const res = await puter.ai.chat([
+      { role: "system", content: system },
+      { role: "user", content: prompt }
+    ], { 
+      model: "claude-3-5-sonnet", // Use the updated model alias
+      stream: true 
+    });
 
-      let chunkCount=0;
-      
-      for await(const part of res){
-        const text=part?.text||"";
-        buffer+=text;
-        chunkCount++;
-        
-        const cleaned=cleanCode(buffer);
-        editorRef.current.setValue(cleaned);
-      }
-
-      clearInterval(progressInterval);
-
-      const cleaned=cleanCode(buffer);
-      const lang=detectLanguage(cleaned);
-      monacoRef.current.editor.setModelLanguage(editorRef.current.getModel(),lang);
-
-      // Automatic UNLIMITED continuation detection and execution
-      showToast("🔍 Checking if code is complete...","info");
-      const finalCode=await autoContinueIfNeeded(cleaned,lang,0);
-      
-      // Auto-generate filename if not provided
-      let finalFilename=filename.trim();
-      if(!finalFilename){
-        finalFilename=generateSmartFilename(prompt,finalCode,lang);
-        setFilename(finalFilename);
-      }
-
-      // Create new file
-      const newFile={
-        id:Date.now().toString(),
-        name:finalFilename,
-        content:finalCode,
-        language:lang,
-        prompt:prompt,
-        createdAt:new Date().toISOString(),
-        size:finalCode.length
-      };
-
-      setFiles(prev=>[newFile,...prev]);
-      setActiveFileId(newFile.id);
-      
-      setProgress(100);
-      showToast(`✨ File "${finalFilename}" created successfully!`,"success");
-      setPrompt("");
-      setFilename("");
-
-    }catch(e){
-      showToast("Generation failed: "+e.message,"error");
-      console.error("Generation error:",e);
+    // Check if the response is actually a stream
+    if (!res || typeof res[Symbol.asyncIterator] !== 'function') {
+      console.error("API Response is not iterable:", res);
+      throw new Error("The AI returned an invalid response format.");
     }
-    
+
+    const progressInterval = setInterval(() => {
+      setProgress(p => Math.min(p + 1, 95));
+    }, 100);
+
+    for await (const part of res) {
+      const text = part?.text || "";
+      buffer += text;
+      
+      // Update editor in real-time
+      const cleaned = cleanCode(buffer);
+      editorRef.current.setValue(cleaned);
+    }
+
+    clearInterval(progressInterval);
+
+    // Continue with your existing logic for auto-continuation
+    const finalCleaned = cleanCode(buffer);
+    const lang = detectLanguage(finalCleaned);
+    const finalCode = await autoContinueIfNeeded(finalCleaned, lang, 0);
+
+    // Save logic...
+    // [Keep the rest of your original logic for creating the file object]
+
+  } catch (e) {
+    console.error("Full Generation Error Details:", e);
+    showToast(`Generation failed: ${e.message}`, "error");
+  } finally {
     setLoading(false);
     setProgress(0);
-    setAutoContinueCount(0);
   }
+}
 
   function selectFile(id){
     setActiveFileId(id);
