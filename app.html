@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -100,6 +99,9 @@ button span{z-index:1}
 .progress-fill{height:100%;background:linear-gradient(90deg,#6ef3c5,#4ade80,#6ef3c5);background-size:200% 100%;animation:progressShimmer 2s linear infinite;transition:width 0.3s}
 .progress-text{margin-top:8px;font-size:0.85rem;color:#94a3b8;text-align:center}
 
+/* Auto-continue indicator */
+.auto-continue-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(251,191,36,.15);padding:4px 12px;border-radius:8px;font-size:0.8rem;color:#fbbf24;font-weight:600;animation:badgePulse 2s ease infinite}
+
 /* Editor Container */
 .editor-container{background:rgba(255,255,255,.06);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:24px;box-shadow:0 8px 32px rgba(0,0,0,.3);animation:fadeIn 0.8s ease}
 .editor-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
@@ -143,6 +145,7 @@ button span{z-index:1}
 @keyframes scaleIn{from{opacity:0;transform:scale(0.9)}to{opacity:1;transform:scale(1)}}
 @keyframes slideIn{from{opacity:0;transform:translateX(100px)}to{opacity:1;transform:translateX(0)}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+@keyframes badgePulse{0%,100%{opacity:1}50%{opacity:.7}}
 @keyframes warningPulse{0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,.4)}50%{box-shadow:0 0 0 8px rgba(251,191,36,0)}}
 @keyframes dangerPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.4)}50%{box-shadow:0 0 0 8px rgba(239,68,68,0)}}
 @keyframes progressShimmer{0%{background-position:0% 0}100%{background-position:200% 0}}
@@ -191,6 +194,8 @@ function cleanCode(raw){
     .replace(/Could you please share.*$/s,'')
     .replace(/I'll continue.*$/s,'')
     .replace(/Let me continue.*$/s,'')
+    .replace(/I need to see.*$/s,'')
+    .replace(/Please provide.*$/s,'')
     .trim();
 }
 
@@ -206,6 +211,76 @@ function detectLanguage(code){
   if(/<?php|function\s+\w+\(.*\)\s*{/.test(code))return"php";
   if(/interface\s+\w+|type\s+\w+\s*=/.test(code))return"typescript";
   return"javascript";
+}
+
+function isCodeIncomplete(code,language){
+  if(!code||code.length<50)return true;
+  
+  const trimmed=code.trim();
+  const lastLine=trimmed.split('\n').pop().trim();
+  
+  // Check for incomplete patterns
+  const incompletePatterns=[
+    /[({[,]$/,                    // Ends with opening bracket or comma
+    /^\s*\/\//,                   // Last line is a comment (incomplete)
+    /^\s*#/,                      // Python comment at end
+    /\bfunction\s+\w+\s*\(\s*$/,  // Incomplete function declaration
+    /\bif\s*\([^)]*$/,            // Incomplete if statement
+    /\bfor\s*\([^)]*$/,           // Incomplete for loop
+    /\bwhile\s*\([^)]*$/,         // Incomplete while loop
+    /=>\s*$/,                     // Arrow function without body
+    /:\s*$/,                      // Colon at end (incomplete)
+    /\\\s*$/,                     // Line continuation
+    /,\s*$/,                      // Trailing comma suggesting more
+  ];
+  
+  // Check if any incomplete pattern matches the last line
+  for(const pattern of incompletePatterns){
+    if(pattern.test(lastLine))return true;
+  }
+  
+  // Language-specific incomplete checks
+  if(language==="html"){
+    // Check for unclosed HTML tags
+    const openTags=code.match(/<(\w+)[^>]*>/g)||[];
+    const closeTags=code.match(/<\/(\w+)>/g)||[];
+    if(openTags.length>closeTags.length+2)return true; // Allow 2 unclosed (html, body)
+    
+    // Check if ends abruptly without closing major tags
+    if(!/<\/html>\s*$/.test(trimmed)&&code.includes('<html'))return true;
+  }
+  
+  if(language==="javascript"||language==="typescript"){
+    // Count brackets
+    const openCurly=(code.match(/\{/g)||[]).length;
+    const closeCurly=(code.match(/\}/g)||[]).length;
+    const openParen=(code.match(/\(/g)||[]).length;
+    const closeParen=(code.match(/\)/g)||[]).length;
+    const openSquare=(code.match(/\[/g)||[]).length;
+    const closeSquare=(code.match(/\]/g)||[]).length;
+    
+    // If imbalanced by more than 1, consider incomplete
+    if(Math.abs(openCurly-closeCurly)>1)return true;
+    if(Math.abs(openParen-closeParen)>1)return true;
+    if(Math.abs(openSquare-closeSquare)>1)return true;
+  }
+  
+  if(language==="python"){
+    // Check for incomplete indented blocks
+    const lines=code.split('\n');
+    const lastNonEmpty=lines.filter(l=>l.trim()).pop();
+    if(lastNonEmpty&&/:\s*$/.test(lastNonEmpty))return true;
+    
+    // Check if last line is heavily indented (suggesting incomplete block)
+    const lastIndent=(lastNonEmpty.match(/^\s*/)||[''])[0].length;
+    if(lastIndent>8)return true;
+  }
+  
+  // Check for TODO or placeholder comments near the end
+  const last200=code.slice(-200).toLowerCase();
+  if(last200.includes('todo')||last200.includes('implement')||last200.includes('add more'))return true;
+  
+  return false;
 }
 
 function generateSmartFilename(prompt,code,lang){
@@ -254,8 +329,11 @@ function App(){
   const [progress,setProgress]=useState(0);
   const [files,setFiles]=useState([]);
   const [activeFileId,setActiveFileId]=useState(null);
+  const [autoContinueCount,setAutoContinueCount]=useState(0);
   const editorRef=useRef(null);
   const monacoRef=useRef(null);
+  const lastBufferLengthRef=useRef(0);
+  const streamStoppedTimeoutRef=useRef(null);
 
   const activeFile=files.find(f=>f.id===activeFileId);
 
@@ -369,10 +447,80 @@ function App(){
     continueGeneration();
   }
 
+  async function autoContinueIfNeeded(buffer,language,continueCount){
+    // Safety limit: max 5 auto-continuations
+    if(continueCount>=5){
+      showToast("⚠️ Reached maximum auto-continue limit (5 attempts)","warning");
+      return buffer;
+    }
+    
+    // Check if code needs continuation
+    if(!isCodeIncomplete(buffer,language)){
+      showToast("✅ Code generation complete!","success");
+      return buffer;
+    }
+    
+    // Wait a moment to ensure stream has truly stopped
+    await new Promise(resolve=>setTimeout(resolve,1500));
+    
+    if(credits<=10){
+      showToast("⚠️ Insufficient credits for auto-continue","warning");
+      return buffer;
+    }
+    
+    // Auto-continue detected
+    setAutoContinueCount(continueCount+1);
+    showToast(`🔄 Auto-continuing generation (attempt ${continueCount+1}/5)...`,"info");
+    
+    const system=`You are an elite code generation expert. Continue the code with these quality standards:
+- Write complete, working code with NO placeholders
+- Maintain the existing code style and patterns
+- Include proper error handling
+- Use best practices and clean code principles
+- Complete all open functions, tags, and statements
+- Return ONLY code - no explanations, no markdown
+- Ensure the continuation is production-ready`;
+    
+    try{
+      // Get last 1000 chars for context
+      const context=buffer.slice(-1000);
+      
+      const cont=await puter.ai.chat([
+        {role:"system",content:system},
+        {role:"user",content:`Continue this code EXACTLY where it stops. DO NOT restart or explain, just continue:\n\n${context}\n\nComplete all open tags, functions, and statements.`}
+      ],{model:"claude-sonnet-4-20250514",stream:true});
+
+      let newBuffer=buffer;
+      for await(const part of cont){
+        const text=part?.text||"";
+        newBuffer+=text;
+        const cleaned=cleanCode(newBuffer);
+        editorRef.current.setValue(cleaned);
+        
+        // Check credits during streaming
+        if(credits-Math.ceil(cleaned.length/200)<=5){
+          showToast("⚠️ Credits running low, stopping auto-continue","warning");
+          return cleaned;
+        }
+      }
+      
+      const cleaned=cleanCode(newBuffer);
+      
+      // Recursively check if still incomplete
+      return await autoContinueIfNeeded(cleaned,language,continueCount+1);
+      
+    }catch(e){
+      showToast("Auto-continue failed: "+e.message,"error");
+      return buffer;
+    }
+  }
+
   async function continueGeneration(){
     closeModal();
     setLoading(true);
     setProgress(0);
+    setAutoContinueCount(0);
+    lastBufferLengthRef.current=0;
     
     let buffer="";
     const system=`You are an elite code generation expert. Generate production-ready, fully functional code with these requirements:
@@ -396,16 +544,19 @@ function App(){
       ],{model:"claude-sonnet-4-20250514",stream:true});
 
       let chunkCount=0;
+      let lastUpdateTime=Date.now();
+      
       for await(const part of res){
         const text=part?.text||"";
         buffer+=text;
         chunkCount++;
+        lastUpdateTime=Date.now();
         
         const cleaned=cleanCode(buffer);
         editorRef.current.setValue(cleaned);
 
         if(chunkCount%10===0){
-          const currentCost=Math.ceil(cleaned.length/200); // More generous
+          const currentCost=Math.ceil(cleaned.length/200);
           if(credits-currentCost<=0){
             showToast("Credits exhausted during generation!","warning");
             break;
@@ -415,30 +566,18 @@ function App(){
 
       clearInterval(progressInterval);
 
-      // Auto-continue if code seems incomplete
-      if(buffer.length>100&&!/[}\);>\]]$/.test(buffer.trim())){
-        showToast("Continuing generation...","info");
-        
-        const cont=await puter.ai.chat([
-          {role:"system",content:system},
-          {role:"user",content:"Continue the code exactly where you stopped. Complete it fully."}
-        ],{model:"claude-sonnet-4-20250514",stream:true});
-
-        for await(const part of cont){
-          buffer+=part?.text||"";
-          const cleaned=cleanCode(buffer);
-          editorRef.current.setValue(cleaned);
-        }
-      }
-
-      const final=cleanCode(buffer);
-      const lang=detectLanguage(final);
+      const cleaned=cleanCode(buffer);
+      const lang=detectLanguage(cleaned);
       monacoRef.current.editor.setModelLanguage(editorRef.current.getModel(),lang);
 
+      // Automatic continuation detection and execution
+      showToast("🔍 Checking if code is complete...","info");
+      const finalCode=await autoContinueIfNeeded(cleaned,lang,0);
+      
       // Auto-generate filename if not provided
       let finalFilename=filename.trim();
       if(!finalFilename){
-        finalFilename=generateSmartFilename(prompt,final,lang);
+        finalFilename=generateSmartFilename(prompt,finalCode,lang);
         setFilename(finalFilename);
       }
 
@@ -446,17 +585,17 @@ function App(){
       const newFile={
         id:Date.now().toString(),
         name:finalFilename,
-        content:final,
+        content:finalCode,
         language:lang,
         prompt:prompt,
         createdAt:new Date().toISOString(),
-        size:final.length
+        size:finalCode.length
       };
 
       setFiles(prev=>[newFile,...prev]);
       setActiveFileId(newFile.id);
 
-      const totalCost=Math.ceil(final.length/150);
+      const totalCost=Math.ceil(finalCode.length/150);
       const newCredits=Math.max(credits-totalCost,0);
       setCredits(newCredits);
       
@@ -482,6 +621,7 @@ function App(){
     
     setLoading(false);
     setProgress(0);
+    setAutoContinueCount(0);
   }
 
   function selectFile(id){
@@ -569,6 +709,7 @@ function App(){
 
     setLoading(true);
     setProgress(0);
+    setAutoContinueCount(0);
     showToast("Continuing code generation...","info");
 
     let buffer=activeFile.content;
@@ -602,11 +743,15 @@ function App(){
 
       clearInterval(progressInterval);
 
-      const final=cleanCode(buffer);
-      const updatedFile={...activeFile,content:final,size:final.length};
+      const cleaned=cleanCode(buffer);
+      
+      // Auto-continue if still incomplete
+      const finalCode=await autoContinueIfNeeded(cleaned,activeFile.language,0);
+      
+      const updatedFile={...activeFile,content:finalCode,size:finalCode.length};
       setFiles(prev=>prev.map(f=>f.id===activeFile.id?updatedFile:f));
 
-      const cost=Math.ceil((final.length-activeFile.size)/200); // More generous
+      const cost=Math.ceil((finalCode.length-activeFile.size)/200);
       setCredits(prev=>Math.max(prev-cost,0));
 
       setProgress(100);
@@ -618,6 +763,7 @@ function App(){
 
     setLoading(false);
     setProgress(0);
+    setAutoContinueCount(0);
   }
 
   function resetCredits(){
@@ -726,6 +872,12 @@ function App(){
                   <i data-lucide="shield-check" style={{width:"14px",height:"14px"}}></i>
                   Quality Mode
                 </span>
+                {loading&&autoContinueCount>0&&(
+                  <span className="auto-continue-badge">
+                    <i data-lucide="repeat" style={{width:"14px",height:"14px"}}></i>
+                    Auto-Continue {autoContinueCount}/5
+                  </span>
+                )}
               </div>
               <textarea 
                 value={prompt} 
@@ -755,7 +907,7 @@ function App(){
                   <span>•</span>
                   <span>Remaining after: <span className="token-cost">{Math.max(credits-estimatedCost,0)} credits</span></span>
                   <span>•</span>
-                  <span style={{color:"#6ef3c5"}}>✨ Quality assured</span>
+                  <span style={{color:"#6ef3c5"}}>✨ Auto-Complete enabled</span>
                 </div>
               )}
             </div>
@@ -781,7 +933,9 @@ function App(){
               <div className="progress-bar">
                 <div className="progress-fill" style={{width:`${progress}%`}}></div>
               </div>
-              <div className="progress-text">Generating your code... {progress}%</div>
+              <div className="progress-text">
+                {autoContinueCount>0?`Auto-continuing generation (${autoContinueCount}/5)... ${progress}%`:`Generating your code... ${progress}%`}
+              </div>
             </div>
           </div>
 
