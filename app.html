@@ -478,23 +478,10 @@ function App(){
         setProgress(p=>Math.min(p+1,95));
       },100);
 
-      const res = await puter.ai.chat([
-      {role:"system", content:system},
-      {role:"user", content:prompt}
-    ], { 
-      model: "claude-4-5-sonnet", // Updated model string
-      stream: true 
-    });
-
-    if(!res) throw new Error("No response from AI service");
-
-    for await(const part of res){
-      // ... streaming logic ...
-    }
-  } catch (e) {
-    showToast("Generation failed: " + e.message, "error");
-    setLoading(false);
-  }
+      const res=await puter.ai.chat([
+        {role:"system",content:system},
+        {role:"user",content:prompt}
+      ],{model:"claude-sonnet-4-20250514",stream:true});
 
       let chunkCount=0;
       
