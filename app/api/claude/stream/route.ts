@@ -1,22 +1,21 @@
-
 import { createOpenAI } from '@ai-sdk/openai';
 import { streamText } from 'ai';
+import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'edge';
 
 const openrouter = createOpenAI({
   baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: process.env.OPENROUTER_API_KEY,
+  apiKey: process.env.OPENROUTER_API_KEY!,
 });
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const { prompt } = await req.json();
-
-  const result = streamText({
+  
+  const result = await streamText({
     model: openrouter('anthropic/claude-3.5-sonnet@20240620'),
-    prompt: `Generate perfect ${prompt} code. Preserve ALL details, no skips.`,
-    temperature: 0.1,
+    prompt: `Generate PERFECT ${prompt} code. Preserve ALL details.`,
   });
 
-  return result.toAIStreamResponse();
+  return result.toTextStreamResponse();  // ✅ FIXED: toTextStreamResponse()
 }
