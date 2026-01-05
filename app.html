@@ -294,36 +294,7 @@ function generateSmartFilename(prompt, code, lang) {
     return `${name}.${ext}`;
 }
 
-async function ensurePuterAuth() {
-    try {
-        // 1. Check if the SDK is even loaded
-        if (typeof puter === 'undefined') {
-            throw new Error("Puter SDK is missing from the global window object.");
-        }
 
-        // 2. Attempt whoami
-        const user = await puter.auth.whoami();
-        
-        // If we get here, the user is already logged in
-        return user;
-        
-    } catch (error) {
-        // 3. Handle the 401 / Not Authenticated case
-        console.warn("User is not signed in (401). Opening Puter sign-in...");
-        
-        try {
-            // This will open a popup. If blocked, it will throw an error.
-            const signInResult = await puter.auth.signIn();
-            
-            // 4. Verification after sign-in
-            const userAfterSignIn = await puter.auth.whoami();
-            return userAfterSignIn;
-        } catch (signInError) {
-            console.error("Sign-in process failed or was cancelled:", signInError);
-            throw new Error("Login failed. Please enable popups and try again.");
-        }
-    }
-}
 
 function App() {
     const [prompt, setPrompt] = useState("");
