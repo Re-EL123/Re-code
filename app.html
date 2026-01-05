@@ -10,9 +10,6 @@
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-<!-- Puter AI -->
-<script src="https://js.puter.com/v2/"></script>
-
 <!-- Lucide Icons -->
 <script src="https://unpkg.com/lucide@latest"></script>
 
@@ -24,7 +21,7 @@
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:Inter,system-ui,sans-serif;background:#0a0e1a;color:#f1f5f9;overflow-x:hidden}
 .app{max-width:1800px;margin:auto;padding:20px;position:relative}
-.layout{display:grid;grid-template-columns:280px 1fr;gap:20px}
+.layout{display:grid;grid-template-columns:280px 1fr 420px;gap:20px}
 
 /* Header */
 header{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.05);backdrop-filter:blur(20px);padding:20px 28px;border-radius:20px;margin-bottom:4px;border:1px solid rgba(110,243,197,.2);box-shadow:0 8px 32px rgba(0,0,0,.3);animation:slideDown 0.6s ease}
@@ -109,6 +106,16 @@ button span{z-index:1}
 .icon-btn:disabled{opacity:.5;cursor:not-allowed}
 #editor{height:500px;border-radius:16px;border:2px solid #1e293b;overflow:hidden;box-shadow:inset 0 2px 8px rgba(0,0,0,.3)}
 
+/* Preview Container */
+.preview-container{background:rgba(255,255,255,.06);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:24px;box-shadow:0 8px 32px rgba(0,0,0,.3);animation:fadeIn 0.8s ease;display:none}
+.preview-container.active{display:block}
+.preview-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.preview-title{display:flex;align-items:center;gap:8px;font-weight:700;color:#6ef3c5;font-size:1.1rem}
+#preview-iframe{width:100%;height:450px;border-radius:16px;border:2px solid #1e293b;background:#1a1b26;overflow:hidden;box-shadow:inset 0 2px 8px rgba(0,0,0,.3)}
+#preview-console{padding:16px;background:#0f0f23;border-radius:12px;border:1px solid #1e293b;font-family:monospace;font-size:0.8rem;color:#94a3b8;max-height:100px;overflow-y:auto}
+.console-line{display:block;margin:2px 0}
+.console-error{color:#ef4444}
+
 /* Stats */
 .stats{display:flex;gap:24px;margin-top:16px;padding:16px;background:rgba(2,6,23,.6);border-radius:12px;border:1px solid #1e293b;flex-wrap:wrap}
 .stat-item{display:flex;align-items:center;gap:8px;font-size:0.9rem;color:#94a3b8}
@@ -147,16 +154,14 @@ button span{z-index:1}
 @keyframes progressShimmer{0%{background-position:0% 0}100%{background-position:200% 0}}
 
 /* Responsive */
-@media(max-width:1024px){
-  .layout{grid-template-columns:1fr}
-  .sidebar{max-height:300px}
-}
+@media(max-width:1400px){.layout{grid-template-columns:280px 1fr}}
+@media(max-width:1024px){.layout{grid-template-columns:1fr}}
 @media(max-width:768px){
   header{flex-direction:column;gap:16px;text-align:center}
   .actions{flex-direction:column}
   button{width:100%;justify-content:center}
   .stats{flex-direction:column;gap:12px}
-  #editor{height:400px}
+  #editor,#preview-container{height:400px}
 }
 </style>
 </head>
@@ -166,18 +171,15 @@ button span{z-index:1}
 <script type="text/babel">
 const {useState,useEffect,useRef}=React;
 
-// Storage Manager (uses in-memory but structured for easy localStorage conversion)
+const API_KEY = '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';
+
+// Storage Manager
 const storage={
   data:{files:[],credits:1000,activeFileId:null},
-  save(){
-    // In-memory storage (persists during browser session)
-    // To enable localStorage, uncomment:
-    // localStorage.setItem('reCodeSession',JSON.stringify(this.data));
-  },
+  save(){localStorage.setItem('reCodeSession',JSON.stringify(this.data));},
   load(){
-    // To enable localStorage, uncomment:
-    // const saved=localStorage.getItem('reCodeSession');
-    // if(saved) this.data=JSON.parse(saved);
+    const saved=localStorage.getItem('reCodeSession');
+    if(saved) this.data=JSON.parse(saved);
   }
 };
 
@@ -185,7 +187,6 @@ function cleanCode(raw){
   return raw
     .replace(/```[\s\S]*?```/g,m=>m.replace(/```[\w]*\n?|```/g,""))
     .replace(/```/g,"")
-    // Remove AI explanations that leak into code
     .replace(/I don't see any previous code.*$/s,'')
     .replace(/Could you please share.*$/s,'')
     .replace(/I'll continue.*$/s,'')
@@ -209,7 +210,7 @@ function detectLanguage(code){
 
 function generateSmartFilename(prompt,code,lang){
   const keywords=prompt.toLowerCase().match(/\b(todo|calculator|game|chat|form|dashboard|api|app|component|website|page|tool|system)\b/g);
-  const mainKeyword=keywords?keywords[0]:"code";
+  const mainKeyword=keywords?keywords:"code";
   
   const extensions={
     javascript:"js",typescript:"ts",html:"html",python:"py",
@@ -217,29 +218,61 @@ function generateSmartFilename(prompt,code,lang){
   };
   const ext=extensions[lang]||"txt";
   
-  // Extract class/function names
   let name=mainKeyword;
   if(lang==="javascript"||lang==="typescript"){
     const match=code.match(/(?:class|function|const)\s+(\w+)/);
-    if(match)name=match[1].toLowerCase();
+    if(match)name=match.toLowerCase();
   }else if(lang==="python"){
     const match=code.match(/def\s+(\w+)|class\s+(\w+)/);
-    if(match)name=(match[1]||match[2]).toLowerCase();
+    if(match)name=(match||match).toLowerCase();
   }else if(lang==="java"){
     const match=code.match(/class\s+(\w+)/);
-    if(match)name=match[1].toLowerCase();
+    if(match)name=match.toLowerCase();
   }
   
   return`${name}.${ext}`;
 }
 
-function estimateTokens(text){
-  return Math.ceil(text.length/4);
-}
+function estimateTokens(text){return Math.ceil(text.length/4);}
+function estimateCost(tokens){return Math.ceil(tokens/50);}
 
-function estimateCost(tokens){
-  // More generous: ~50 tokens per credit (200 chars per credit)
-  return Math.ceil(tokens/50);
+async function callOpenRouter(system,prompt,stream=true){
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),30000);
+  
+  try{
+    const res=await fetch('https://openrouter.ai/api/v1/chat/completions',{
+      method:'POST',
+      headers:{
+        'Authorization':`Bearer ${API_KEY}`,
+        'Content-Type':'application/json',
+        'HTTP-Referer':'https://re-code.ai',
+        'X-Title':'Re-Code AI'
+      },
+      body:JSON.stringify({
+        model:'anthropic/claude-3.5-sonnet',
+        messages:[{role:'system',content:system},{role:'user',content:prompt}],
+        stream,
+        temperature:0.1
+      }),
+      signal:controller.signal
+    });
+    
+    clearTimeout(timeout);
+    
+    if(!res.ok){
+      const error=await res.text();
+      throw new Error(`API Error: ${res.status} ${error}`);
+    }
+    
+    if(stream){
+      return res.body?.getReader?res.body.getReader():null;
+    }
+    return res.json();
+  }catch(e){
+    clearTimeout(timeout);
+    throw e;
+  }
 }
 
 function App(){
@@ -253,8 +286,12 @@ function App(){
   const [progress,setProgress]=useState(0);
   const [files,setFiles]=useState([]);
   const [activeFileId,setActiveFileId]=useState(null);
+  const [previewActive,setPreviewActive]=useState(false);
+  const [previewConsole,setPreviewConsole]=useState([]);
   const editorRef=useRef(null);
   const monacoRef=useRef(null);
+  const previewRef=useRef(null);
+  const consoleRef=useRef([]);
 
   const activeFile=files.find(f=>f.id===activeFileId);
 
@@ -263,9 +300,7 @@ function App(){
     if(storage.data.files.length>0){
       setFiles(storage.data.files);
       setCredits(storage.data.credits);
-      if(storage.data.activeFileId){
-        setActiveFileId(storage.data.activeFileId);
-      }
+      if(storage.data.activeFileId)setActiveFileId(storage.data.activeFileId);
     }
     
     lucide.createIcons();
@@ -307,16 +342,14 @@ function App(){
     setModal({title,body,type,onConfirm});
   }
 
-  function closeModal(){
-    setModal(null);
-  }
+  function closeModal(){setModal(null);}
 
   function autoGenerateFilename(){
     if(!prompt.trim()){
       showToast("Enter a prompt first","warning");
       return;
     }
-    const tempCode=editorRef.current.getValue();
+    const tempCode=editorRef.current?.getValue()||"";
     const lang=detectLanguage(tempCode);
     const name=generateSmartFilename(prompt,tempCode,lang);
     setFilename(name);
@@ -333,39 +366,50 @@ function App(){
       return;
     }
 
-    const estimatedCost=estimateCost(estimateTokens(prompt));
-    
     if(credits<=0){
-      showModal(
-        "No Credits Remaining",
-        "You've run out of credits and cannot generate code. Please reset your credits or wait for them to replenish.",
-        "danger",
-        null
-      );
+      showModal("No Credits Remaining","You've run out of credits. Reset credits to continue.","danger",null);
       return;
     }
 
-    if(credits<estimatedCost){
-      showModal(
-        "Insufficient Credits",
-        `This generation will cost approximately ${estimatedCost} credits, but you only have ${credits} credits remaining. The generation may be cut short.`,
-        "warning",
-        ()=>continueGeneration()
-      );
-      return;
-    }
-
-    if(credits<=100){
-      showModal(
-        "Low Credits Warning",
-        `You have ${credits} credits remaining. This generation will cost approximately ${estimatedCost} credits. Continue anyway?`,
-        "warning",
-        ()=>continueGeneration()
-      );
+    if(credits<estimatedCost&&credits<=100){
+      showModal("Low Credits","Continue with limited credits?","warning",()=>continueGeneration());
       return;
     }
 
     continueGeneration();
+  }
+
+  async function* streamOpenRouter(system,prompt){
+    const reader=await callOpenRouter(system,prompt,true);
+    if(!reader)return;
+    
+    const decoder=new TextDecoder();
+    let buffer="";
+    
+    try{
+      while(true){
+        const {done,value}=await reader.read();
+        if(done)break;
+        
+        buffer+=decoder.decode(value,{stream:true});
+        const lines=buffer.split('\n');
+        buffer=lines.pop()||""; // Keep incomplete line
+        
+        for(const line of lines){
+          if(line.startsWith('data: ')){
+            const data=line.slice(6);
+            if(data==='[DONE]')continue;
+            try{
+              const parsed=JSON.parse(data);
+              const delta=parsed.choices?.?.delta?.content;
+              if(delta)yield delta;
+            }catch(e){}
+          }
+        }
+      }
+    }finally{
+      reader.releaseLock();
+    }
   }
 
   async function continueGeneration(){
@@ -374,74 +418,34 @@ function App(){
     setProgress(0);
     
     let buffer="";
-    const system=`You are an elite code generation expert. Generate production-ready, fully functional code with these requirements:
-- Write complete, working code with NO placeholders or TODOs
-- Include proper error handling and edge cases
-- Use best practices and clean code principles
-- Add helpful comments for complex logic
-- Ensure code is optimized and efficient
-- Make it maintainable and scalable
-- Return ONLY code - no markdown, no explanations, no text outside code
-- Complete all functions, classes, and statements fully`;
+    const system=`You are an elite code generation expert. Generate production-ready, fully functional code:
+- Complete working code, NO placeholders/TODOs
+- Proper error handling and edge cases
+- Best practices and clean code
+- Optimized and efficient
+- Return ONLY code - no markdown, no explanations`;
 
     try{
-      const progressInterval=setInterval(()=>{
-        setProgress(p=>Math.min(p+1,95));
-      },100);
-
-      const res=await puter.ai.chat([
-        {role:"system",content:system},
-        {role:"user",content:prompt}
-      ],{model:"claude-sonnet-4-5",stream:true});
-
-      let chunkCount=0;
-      for await(const part of res){
-        const text=part?.text||"";
+      const progressInterval=setInterval(()=>setProgress(p=>Math.min(p+2,95)),80);
+      
+      for await(const text of streamOpenRouter(system,prompt)){
         buffer+=text;
-        chunkCount++;
-        
         const cleaned=cleanCode(buffer);
         editorRef.current.setValue(cleaned);
-
-        if(chunkCount%10===0){
-          const currentCost=Math.ceil(cleaned.length/200); // More generous
-          if(credits-currentCost<=0){
-            showToast("Credits exhausted during generation!","warning");
-            break;
-          }
-        }
       }
-
+      
       clearInterval(progressInterval);
-
-      // Auto-continue if code seems incomplete
-      if(buffer.length>100&&!/[}\);>\]]$/.test(buffer.trim())){
-        showToast("Continuing generation...","info");
-        
-        const cont=await puter.ai.chat([
-          {role:"system",content:system},
-          {role:"user",content:"Continue the code exactly where you stopped. Complete it fully."}
-        ],{model:"claude-sonnet-4-5",stream:true});
-
-        for await(const part of cont){
-          buffer+=part?.text||"";
-          const cleaned=cleanCode(buffer);
-          editorRef.current.setValue(cleaned);
-        }
-      }
-
+      
       const final=cleanCode(buffer);
       const lang=detectLanguage(final);
       monacoRef.current.editor.setModelLanguage(editorRef.current.getModel(),lang);
 
-      // Auto-generate filename if not provided
       let finalFilename=filename.trim();
       if(!finalFilename){
         finalFilename=generateSmartFilename(prompt,final,lang);
         setFilename(finalFilename);
       }
 
-      // Create new file
       const newFile={
         id:Date.now().toString(),
         name:finalFilename,
@@ -456,24 +460,12 @@ function App(){
       setActiveFileId(newFile.id);
 
       const totalCost=Math.ceil(final.length/150);
-      const newCredits=Math.max(credits-totalCost,0);
-      setCredits(newCredits);
+      setCredits(prev=>Math.max(prev-totalCost,0));
       
       setProgress(100);
       showToast(`File "${finalFilename}" created! Used ${totalCost} credits.`,"success");
       setPrompt("");
       setFilename("");
-
-      if(newCredits<=100&&newCredits>0){
-        setTimeout(()=>{
-          showModal(
-            "Low Credits Alert",
-            `You now have only ${newCredits} credits remaining. You may want to be mindful of your usage.`,
-            "warning",
-            null
-          );
-        },2000);
-      }
 
     }catch(e){
       showToast("Generation failed: "+e.message,"error");
@@ -485,29 +477,21 @@ function App(){
 
   function selectFile(id){
     setActiveFileId(id);
-    const file=files.find(f=>f.id===id);
-    if(file){
-      lucide.createIcons();
-    }
+    lucide.createIcons();
   }
 
   function deleteFile(id,e){
     e.stopPropagation();
-    showModal(
-      "Delete File?",
-      "Are you sure you want to delete this file? This action cannot be undone.",
-      "danger",
-      ()=>{
-        setFiles(prev=>prev.filter(f=>f.id!==id));
-        if(activeFileId===id){
-          setActiveFileId(null);
-          editorRef.current.setValue("// Select a file or generate new code");
-          monacoRef.current.editor.setModelLanguage(editorRef.current.getModel(),"plaintext");
-        }
-        closeModal();
-        showToast("File deleted","info");
+    showModal("Delete File?","This action cannot be undone.","danger",()=>{
+      setFiles(prev=>prev.filter(f=>f.id!==id));
+      if(activeFileId===id){
+        setActiveFileId(null);
+        editorRef.current.setValue("// Select a file or generate new code");
+        monacoRef.current.editor.setModelLanguage(editorRef.current.getModel(),"plaintext");
       }
-    );
+      closeModal();
+      showToast("File deleted","info");
+    });
   }
 
   function downloadFile(id,e){
@@ -525,119 +509,117 @@ function App(){
     showToast(`"${file.name}" downloaded!`,"success");
   }
 
-  function downloadAllFiles(){
-    if(files.length===0){
-      showToast("No files to download","warning");
-      return;
-    }
-    
-    files.forEach(file=>{
-      setTimeout(()=>{
-        const blob=new Blob([file.content],{type:"text/plain"});
-        const url=URL.createObjectURL(blob);
-        const a=document.createElement("a");
-        a.href=url;
-        a.download=file.name;
-        a.click();
-        URL.revokeObjectURL(url);
-      },100*files.indexOf(file));
-    });
-    
-    showToast(`Downloading ${files.length} files...`,"success");
-  }
-
   function copyCode(){
     if(!activeFile){
       showToast("No file selected","warning");
       return;
     }
     navigator.clipboard.writeText(activeFile.content);
-    showToast("Code copied to clipboard!","success");
+    showToast("Code copied!","success");
   }
 
-  async function continueActiveFile(){
+  function togglePreview(){
     if(!activeFile){
       showToast("No file selected","warning");
       return;
     }
-
-    if(credits<=0){
-      showToast("No credits remaining","error");
+    
+    if(previewActive){
+      setPreviewActive(false);
+      setPreviewConsole([]);
       return;
     }
 
-    setLoading(true);
-    setProgress(0);
-    showToast("Continuing code generation...","info");
+    setPreviewActive(true);
+    previewCode();
+  }
 
-    let buffer=activeFile.content;
-    const system=`You are an elite code generation expert. Continue the code with these quality standards:
-- Write complete, working code with NO placeholders
-- Maintain the existing code style and patterns
-- Include proper error handling
-- Use best practices and clean code principles
-- Complete all open functions, tags, and statements
-- Return ONLY code - no explanations, no markdown
-- Ensure the continuation is production-ready`;
-
+  async function previewCode(){
+    if(!activeFile)return;
+    
+    consoleRef.current=[];
+    setPreviewConsole([]);
+    
+    const iframe=previewRef.current;
+    if(!iframe)return;
+    
     try{
-      const progressInterval=setInterval(()=>{
-        setProgress(p=>Math.min(p+2,95));
-      },100);
-
-      // Get last 800 chars for context
-      const context=buffer.slice(-800);
+      // Clear iframe
+      iframe.srcdoc="";
       
-      const cont=await puter.ai.chat([
-        {role:"system",content:system},
-        {role:"user",content:`Continue this code EXACTLY where it stops:\n\n${context}\n\nComplete all open tags, functions, and statements.`}
-      ],{model:"claude-sonnet-4-5",stream:true});
-
-      for await(const part of cont){
-        buffer+=part?.text||"";
-        const cleaned=cleanCode(buffer);
-        editorRef.current.setValue(cleaned);
-      }
-
-      clearInterval(progressInterval);
-
-      const final=cleanCode(buffer);
-      const updatedFile={...activeFile,content:final,size:final.length};
-      setFiles(prev=>prev.map(f=>f.id===activeFile.id?updatedFile:f));
-
-      const cost=Math.ceil((final.length-activeFile.size)/200); // More generous
-      setCredits(prev=>Math.max(prev-cost,0));
-
-      setProgress(100);
-      showToast(`✨ Code continued successfully! Used ${cost} credits.`,"success");
-
+      if(activeFile.language==="html"||activeFile.name.endsWith('.html')){
+        // HTML preview
+        iframe.srcdoc=activeFile.content;
+        showToast("HTML preview loaded","success");
+      }else if(activeFile.language==="javascript"||activeFile.name.match(/\.(js|ts)$/)){
+        // JS preview - create HTML wrapper
+        const htmlWrapper=`<!DOCTYPE html>
+<html>
+<head>
+  <style>body{margin:0;padding:20px;font-family:Arial,sans-serif;background:#1a1b26;color:#e5e7eb}</style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>${activeFile.content}<\/script>
+  <script>
+    try{
+      console.log("✅ Code loaded successfully");
+      console.log("📦 Global scope:",Object.keys(window).filter(k=>k.length<20));
     }catch(e){
-      showToast("Continue failed: "+e.message,"error");
+      console.error("❌ Preview error:",e);
     }
-
-    setLoading(false);
-    setProgress(0);
-  }
-
-  function resetCredits(){
-    setCredits(1000);
-    showToast("Credits reset to 1000","success");
-  }
-
-  function clearAllFiles(){
-    showModal(
-      "Clear All Files?",
-      "This will delete all generated files. This action cannot be undone.",
-      "danger",
-      ()=>{
-        setFiles([]);
-        setActiveFileId(null);
-        editorRef.current.setValue("// All files cleared. Start fresh!");
-        monacoRef.current.editor.setModelLanguage(editorRef.current.getModel(),"plaintext");
-        closeModal();
-        showToast("All files cleared","info");
+  <\/script>
+</body>
+</html>`;
+        iframe.srcdoc=htmlWrapper;
+        showToast("JS preview loaded","success");
+      }else{
+        // Other languages - show code
+        iframe.srcdoc=`<!DOCTYPE html>
+<html><body style="font-family:monospace;padding:20px;background:#0a0e1a;color:#e5e7eb">
+  <h2>📱 Preview (${activeFile.language.toUpperCase()})</h2>
+  <p>Live preview available for <strong>HTML</strong> and <strong>JavaScript</strong></p>
+  <pre style="background:#020617;padding:20px;border-radius:12px;overflow:auto">${activeFile.content.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>
+</body></html>`;
+        showToast("Preview mode: "+activeFile.language,"info");
       }
-    );
+      
+      // Console capture
+      iframe.onload=()=>{
+        try{
+          const consoleLog=(...args)=>logToConsole("log",args.map(a=>String(a)));
+          const consoleError=(...args)=>logToConsole("error",args.map(a=>String(a)));
+          
+          iframe.contentWindow.console.log=consoleLog;
+          iframe.contentWindow.console.error=consoleError;
+          
+          // Override native console
+          Object.defineProperty(iframe.contentWindow.console,'log',{value:consoleLog});
+          Object.defineProperty(iframe.contentWindow.console,'error',{value:consoleError});
+        }catch(e){}
+      };
+      
+    }catch(e){
+      showToast("Preview failed: "+e.message,"error");
+    }
+  }
+
+  function logToConsole(type,args){
+    const timestamp=new Date().toLocaleTimeString();
+    const message=`[${timestamp}] ${args.join(' ')}`;
+    consoleRef.current.push({type,message});
+    setPreviewConsole(prev=>[...prev.slice(-50),{type,message}]);
+  }
+
+  function resetCredits(){setCredits(1000);showToast("Credits reset","success");}
+  function clearAllFiles(){
+    showModal("Clear All Files?","This cannot be undone.","danger",()=>{
+      setFiles([]);
+      setActiveFileId(null);
+      editorRef.current.setValue("// All files cleared");
+      closeModal();
+      showToast("All files cleared","info");
+    });
   }
 
   return(
@@ -678,18 +660,14 @@ function App(){
           
           {files.length===0?(
             <div className="empty-state">
-              <div><i data-lucide="inbox"></i></div>
+              <i data-lucide="inbox"></i>
               <div>No files yet</div>
               <div style={{fontSize:"0.8rem",marginTop:"8px"}}>Generate code to create files</div>
             </div>
           ):(
             <div className="file-list">
               {files.map(file=>(
-                <div 
-                  key={file.id} 
-                  className={`file-item ${activeFileId===file.id?"active":""}`}
-                  onClick={()=>selectFile(file.id)}
-                >
+                <div key={file.id} className={`file-item ${activeFileId===file.id?"active":""}`} onClick={()=>selectFile(file.id)}>
                   <div className="file-info">
                     <div className="file-name" title={file.name}>{file.name}</div>
                     <div className="file-meta">{(file.size/1000).toFixed(1)}KB • {file.language}</div>
@@ -706,13 +684,6 @@ function App(){
               ))}
             </div>
           )}
-          
-          {files.length>1&&(
-            <button className="secondary" onClick={downloadAllFiles} style={{width:"100%",marginTop:"12px",fontSize:"0.85rem",padding:"10px"}}>
-              <i data-lucide="download-cloud"></i>
-              <span>Download All</span>
-            </button>
-          )}
         </aside>
 
         <div className="main-content">
@@ -726,22 +697,10 @@ function App(){
                   Quality Mode
                 </span>
               </div>
-              <textarea 
-                value={prompt} 
-                onChange={e=>setPrompt(e.target.value)} 
-                placeholder="Example: Create a responsive calculator with gradient design and keyboard support..."
-                disabled={loading}
-              />
+              <textarea value={prompt} onChange={e=>setPrompt(e.target.value)} placeholder="Create a responsive calculator with gradient design..." disabled={loading}/>
               
               <div className="filename-section">
-                <input 
-                  type="text"
-                  className="filename-input"
-                  value={filename}
-                  onChange={e=>setFilename(e.target.value)}
-                  placeholder="Filename (auto-generated if empty)"
-                  disabled={loading}
-                />
+                <input type="text" className="filename-input" value={filename} onChange={e=>setFilename(e.target.value)} placeholder="Filename (auto-generated)" disabled={loading}/>
                 <button className="auto-name-btn" onClick={autoGenerateFilename} disabled={loading}>
                   <i data-lucide="wand-2" style={{width:"16px",height:"16px"}}></i> Auto
                 </button>
@@ -750,11 +709,7 @@ function App(){
               {prompt&&(
                 <div className="token-estimate">
                   <i data-lucide="info"></i>
-                  <span>Estimated cost: <span className="token-cost">~{estimatedCost} credits</span></span>
-                  <span>•</span>
-                  <span>Remaining after: <span className="token-cost">{Math.max(credits-estimatedCost,0)} credits</span></span>
-                  <span>•</span>
-                  <span style={{color:"#6ef3c5"}}>✨ Quality assured</span>
+                  <span>Cost: ~{estimatedCost} credits • Remaining: {Math.max(credits-estimatedCost,0)}</span>
                 </div>
               )}
             </div>
@@ -765,22 +720,15 @@ function App(){
                 <span>{loading?"Generating...":"Generate Code"}</span>
               </button>
               <button className="secondary" onClick={copyCode} disabled={!activeFile}>
-                <i data-lucide="copy"></i>
-                <span>Copy</span>
+                <i data-lucide="copy"></i> Copy
               </button>
-              {activeFile&&(
-                <button className="secondary" onClick={continueActiveFile} disabled={loading}>
-                  <i data-lucide="play-circle"></i>
-                  <span>Continue Code</span>
-                </button>
-              )}
             </div>
 
             <div className={`progress-container ${loading?"active":""}`}>
               <div className="progress-bar">
                 <div className="progress-fill" style={{width:`${progress}%`}}></div>
               </div>
-              <div className="progress-text">Generating your code... {progress}%</div>
+              <div className="progress-text">Generating... {progress}%</div>
             </div>
           </div>
 
@@ -792,9 +740,14 @@ function App(){
               </div>
               <div className="editor-actions">
                 {activeFile&&(
-                  <div style={{fontSize:"0.9rem",color:"#94a3b8",marginRight:"12px"}}>
-                    Language: <span style={{color:"#6ef3c5",fontWeight:700}}>{activeFile.language}</span>
-                  </div>
+                  <>
+                    <div style={{fontSize:"0.9rem",color:"#94a3b8"}}>
+                      {activeFile.language}
+                    </div>
+                    <button className="icon-btn" onClick={togglePreview} title="Preview">
+                      <i data-lucide={previewActive?"eye-off":"eye"}></i>
+                    </button>
+                  </>
                 )}
               </div>
             </div>
@@ -808,23 +761,40 @@ function App(){
                 <>
                   <div className="stat-item">
                     <i data-lucide="file-text"></i>
-                    <span>Characters: <span className="stat-value">{activeFile.size.toLocaleString()}</span></span>
+                    <span>Chars: <span className="stat-value">{activeFile.size.toLocaleString()}</span></span>
                   </div>
                   <div className="stat-item">
-                    <i data-lucide="layers"></i>
-                    <span>Lines: <span className="stat-value">{activeFile.content.split('\n').length}</span></span>
+                    <i data-lucide="zap"></i>
+                    <span>Credits Used: <span className="stat-value">{maxCredits-credits}</span></span>
                   </div>
                 </>
               )}
-              <div className="stat-item">
-                <i data-lucide="zap"></i>
-                <span>Credits Used: <span className="stat-value">{maxCredits-credits}</span></span>
-              </div>
-              <div className="stat-item" style={{color:"#6ef3c5"}}>
-                <i data-lucide="shield-check"></i>
-                <span>Quality: <span className="stat-value">Premium</span></span>
-              </div>
             </div>
+          </div>
+        </div>
+
+        <div className={`preview-container ${previewActive&&activeFile?"active":""}`}>
+          <div className="preview-header">
+            <div className="preview-title">
+              <i data-lucide="monitor"></i>
+              Live Preview
+            </div>
+            <div className="editor-actions">
+              <button className="icon-btn" onClick={previewCode} title="Refresh">
+                <i data-lucide="refresh-cw"></i>
+              </button>
+              <button className="icon-btn" onClick={togglePreview} title="Close">
+                <i data-lucide="x"></i>
+              </button>
+            </div>
+          </div>
+          <iframe ref={previewRef} id="preview-iframe" title="Preview"/>
+          <div id="preview-console">
+            {previewConsole.map((log,i)=>(
+              <div key={i} className={`console-line ${log.type==="error"?"console-error":""}`}>
+                {log.message}
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -837,7 +807,7 @@ function App(){
             toast.type==="warning"?"alert-triangle":
             "info"
           }></i>
-          <span>{toast.msg}</span>
+          {toast.msg}
         </div>
       )}
 
@@ -853,14 +823,10 @@ function App(){
             <div className="modal-body">{modal.body}</div>
             <div className="modal-actions">
               {modal.onConfirm&&(
-                <button className="primary" onClick={modal.onConfirm}>
-                  <i data-lucide="check"></i>
-                  <span>Continue</span>
-                </button>
+                <button className="primary" onClick={modal.onConfirm}>Continue</button>
               )}
               <button className="secondary" onClick={closeModal}>
-                <i data-lucide="x"></i>
-                <span>{modal.onConfirm?"Cancel":"Close"}</span>
+                {modal.onConfirm?"Cancel":"Close"}
               </button>
             </div>
           </div>
