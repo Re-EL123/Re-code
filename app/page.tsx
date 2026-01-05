@@ -10,31 +10,31 @@ export default function ReCodeClaude() {
   const [previewSrc, setPreviewSrc] = useState("");
 
   async function generateAndPreview() {
-    setLoading(true);
-    setCode("");
+  setLoading(true);
+  setCode("");
 
-    const response = await fetch("/api/claude/stream", {
-      method: "POST",
-      body: JSON.stringify({ prompt }),
-      headers: { "Content-Type": "application/json" },
-    });
+  const response = await fetch("/api/claude/stream", {
+    method: "POST",
+    body: JSON.stringify({ prompt }),
+    headers: { "Content-Type": "application/json" },
+  });
 
-    const reader = response.body?.getReader();
-    const decoder = new TextDecoder();
+  const reader = response.body?.getReader();
+  const decoder = new TextDecoder();
+  
+  while (true) {
+    if (!reader) break;  // ✅ SAFETY CHECK
+    const { done, value } = await reader.read();  // ✅ NO OPTIONAL CHAINING
+    if (done) break;
     
-    while (true) {
-  if (!reader) break;
-  const { done, value } = await reader.read();  // ✅ FIXED
-  if (done) break;
-
-      
-      const chunk = decoder.decode(value, { stream: true });
-      setCode((prev) => prev + chunk);
-    }
-    
-    setLoading(false);
-    updatePreview();
+    const chunk = decoder.decode(value, { stream: true });
+    setCode((prev) => prev + chunk);
   }
+  
+  setLoading(false);
+  updatePreview();
+}
+
 
   const updatePreview = () => {
     if (code) {
