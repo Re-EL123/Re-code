@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -254,10 +255,8 @@ function App(){
   const monacoRef=useRef(null);
   const lastEditorChangeRef=useRef(null);
   const editorCheckIntervalRef=useRef(null);
-  const streamTimeoutRef=useRef(null);
   const savedCodeBufferRef=useRef("");
   const generationActiveRef=useRef(false);
-  const sdkLoadedRef=useRef(false);
 
   const activeFile=files.find(f=>f.id===activeFileId);
 
@@ -287,16 +286,9 @@ function App(){
         padding:{top:16,bottom:16}
       });
     });
-    
-    // Cleanup on unmount
-    return()=>{
-      killAllIntervals();
-    };
   },[]);
 
   // Auto-continue monitor: watches for editor stalls during generation
-  // After 90s of no changes: deletes zombie SDK, reloads fresh, continues generation
-  // Uses 20s hard timeout per stream - kills and retries if no chunks arrive
   useEffect(()=>{
     if(loading&&generationActiveRef.current){
       lastEditorChangeRef.current=Date.now();
@@ -304,19 +296,23 @@ function App(){
       editorCheckIntervalRef.current=setInterval(()=>{
         const timeSinceLastChange=Date.now()-lastEditorChangeRef.current;
         
-        // If editor hasn't changed in 90 seconds, trigger auto-continue
-        if(timeSinceLastChange>=90000&&!autoContinueActive){
-          console.log("⚠️ Editor stalled for 90s - triggering auto-continue with fresh auth");
+        // If editor hasn't changed in 3 seconds, trigger auto-continue
+        if(timeSinceLastChange>=3000&&!autoContinueActive){
+          console.log("⚠️ Editor stalled - triggering auto-continue");
           setAutoContinueActive(true);
           autoResumeGeneration();
         }
-      },2000); // Check every 2 seconds
+      },500); // Check every 500ms
       
       return()=>{
-        killAllIntervals();
+        if(editorCheckIntervalRef.current){
+          clearInterval(editorCheckIntervalRef.current);
+        }
       };
     }else{
-      killAllIntervals();
+      if(editorCheckIntervalRef.current){
+        clearInterval(editorCheckIntervalRef.current);
+      }
     }
   },[loading,autoContinueActive]);
 
@@ -335,55 +331,6 @@ function App(){
   useEffect(()=>{
     lucide.createIcons();
   },[toast,modal,files,autoContinueActive]);
-
-  function killAllIntervals(){
-    console.log("🔪 Killing all intervals and timeouts aggressively");
-    if(editorCheckIntervalRef.current){
-      clearInterval(editorCheckIntervalRef.current);
-      editorCheckIntervalRef.current=null;
-    }
-    if(streamTimeoutRef.current){
-      clearTimeout(streamTimeoutRef.current);
-      streamTimeoutRef.current=null;
-    }
-  }
-
-  async function reloadPuterSDK(){
-    console.log("♻️ Reloading Puter SDK dynamically...");
-    
-    // Kill zombie SDK instance
-    if(window.puter?.ai){
-      try{
-        delete window.puter;
-        console.log("✅ Deleted old Puter SDK instance");
-      }catch(e){
-        console.warn("Could not delete puter:",e);
-      }
-    }
-    
-    // Remove old script tag if exists
-    const oldScript=document.querySelector('script[src*="puter.com"]');
-    if(oldScript){
-      oldScript.remove();
-    }
-    
-    // Load fresh SDK
-    return new Promise((resolve,reject)=>{
-      const script=document.createElement('script');
-      script.src='https://js.puter.com/v2/';
-      script.onload=()=>{
-        console.log("✅ Fresh Puter SDK loaded");
-        sdkLoadedRef.current=true;
-        // Give SDK time to initialize
-        setTimeout(resolve,1000);
-      };
-      script.onerror=()=>{
-        console.error("❌ Failed to reload Puter SDK");
-        reject(new Error("SDK reload failed"));
-      };
-      document.head.appendChild(script);
-    });
-  }
 
   function showToast(msg,type="info"){
     setToast({msg,type});
@@ -415,50 +362,25 @@ function App(){
   const creditStatus=creditPercent<=10?"danger":creditPercent<=30?"warning":"normal";
 
   async function autoResumeGeneration(){
-    console.log("🔄 Auto-resuming generation - killing zombie instances...");
-    
-    // Kill all intervals first
-    killAllIntervals();
+    console.log("🔄 Auto-resuming generation...");
     
     // Save current editor state
     const currentCode=editorRef.current.getValue();
     savedCodeBufferRef.current=currentCode;
     
-    showToast("♻️ Killing old SDK & reloading fresh...","info");
-    
-    // Delete zombie SDK and reload fresh
-    try{
-      await reloadPuterSDK();
-      showToast("✅ Fresh SDK loaded, continuing generation...","success");
-    }catch(sdkErr){
-      console.error("SDK reload failed:",sdkErr);
-      showToast("SDK reload failed, attempting anyway...","warning");
-    }
+    showToast("🔄 Auto-continuing generation...","info");
     
     // Get last 1000 chars for context
     const context=currentCode.slice(-1000);
     
     const system=`You are an elite code generation expert. Continue the code EXACTLY where it stopped:
-- Pick up from the EXACT last character/symbol in the provided code
-- Do NOT repeat any existing code - only add NEW continuation
-- Maintain the existing code style and patterns perfectly
+- Pick up from the last incomplete line/statement
+- Maintain the existing code style and patterns
 - Complete all open functions, tags, brackets, and statements
 - Write complete, working code with NO placeholders
 - Include proper error handling
-- Return ONLY the CONTINUATION code - no explanations, no markdown
-- Ensure seamless merge: your output will be appended directly to existing code`;
-
-    // Verify SDK is loaded
-    if(!window.puter?.ai){
-      console.warn("⚠️ Puter SDK not available, reloading...");
-      try{
-        await reloadPuterSDK();
-      }catch(sdkErr){
-        showToast("SDK unavailable - cannot continue","error");
-        setAutoContinueActive(false);
-        return;
-      }
-    }
+- Return ONLY code - no explanations, no markdown
+- Ensure seamless continuation that merges perfectly with existing code`;
 
     try{
       const cont=await puter.ai.chat([
@@ -467,21 +389,12 @@ function App(){
       ],{model:"claude-sonnet-4-20250514",stream:true});
 
       let newBuffer=savedCodeBufferRef.current;
-      let hasReceivedData=false;
-      
       for await(const part of cont){
         const text=part?.text||"";
-        if(text){
-          hasReceivedData=true;
-          newBuffer+=text;
-          const cleaned=cleanCode(newBuffer);
-          editorRef.current.setValue(cleaned);
-          lastEditorChangeRef.current=Date.now(); // Reset timer
-        }
-      }
-
-      if(!hasReceivedData){
-        throw new Error("No data received from API");
+        newBuffer+=text;
+        const cleaned=cleanCode(newBuffer);
+        editorRef.current.setValue(cleaned);
+        lastEditorChangeRef.current=Date.now(); // Reset timer
       }
 
       savedCodeBufferRef.current=newBuffer;
@@ -490,63 +403,12 @@ function App(){
       const cost=Math.ceil((newBuffer.length-currentCode.length)/200);
       setCredits(prev=>Math.max(prev-cost,0));
       
-      showToast("✅ Auto-continue completed successfully!","success");
+      showToast("✅ Auto-continue successful!","success");
       
     }catch(e){
       console.error("Auto-continue error:",e);
       setAutoContinueActive(false);
-      
-      // Retry once with fresh connection
-      if(!e.retried){
-        console.log("🔄 Retrying with fresh auth and connection...");
-        showToast("Retrying with fresh authentication...","warning");
-        
-        setTimeout(async()=>{
-          try{
-            // Clear old token and reauth for retry
-            try{
-              if(window.puter?.authToken){
-                delete window.puter.authToken;
-              }
-            }catch(clearErr){}
-            
-            await new Promise(resolve=>setTimeout(resolve,500));
-            
-            const retryContext=savedCodeBufferRef.current.slice(-1000);
-            const retryCont=await puter.ai.chat([
-              {role:"system",content:system},
-              {role:"user",content:`Continue this code EXACTLY where it stops:\n\n${retryContext}`}
-            ],{model:"claude-sonnet-4-20250514",stream:true});
-            
-            let retryBuffer=savedCodeBufferRef.current;
-            for await(const part of retryCont){
-              const text=part?.text||"";
-              if(text){
-                retryBuffer+=text;
-                const cleaned=cleanCode(retryBuffer);
-                editorRef.current.setValue(cleaned);
-                lastEditorChangeRef.current=Date.now();
-              }
-            }
-            
-            savedCodeBufferRef.current=retryBuffer;
-            setAutoContinueActive(false);
-            
-            const retryCost=Math.ceil((retryBuffer.length-currentCode.length)/200);
-            setCredits(prev=>Math.max(prev-retryCost,0));
-            
-            showToast("✅ Auto-continue retry successful!","success");
-          }catch(retryErr){
-            console.error("Retry failed:",retryErr);
-            showToast("Auto-continue failed after retry: "+retryErr.message,"error");
-            setAutoContinueActive(false);
-          }
-        },1000);
-        
-        e.retried=true;
-      }else{
-        showToast("Auto-continue failed: "+e.message,"error");
-      }
+      showToast("Auto-continue failed: "+e.message,"error");
     }
   }
 
@@ -593,10 +455,6 @@ function App(){
 
   async function continueGeneration(){
     closeModal();
-    
-    // Kill all intervals before starting
-    killAllIntervals();
-    
     setLoading(true);
     setProgress(0);
     generationActiveRef.current=true;
@@ -621,15 +479,6 @@ function App(){
         setProgress(p=>Math.min(p+1,95));
       },100);
 
-      // Set hard timeout for stream
-      let firstChunkReceived=false;
-      streamTimeoutRef.current=setTimeout(()=>{
-        if(!firstChunkReceived){
-          clearInterval(progressInterval);
-          throw new Error("Initial stream stalled - no data in 20 seconds");
-        }
-      },20000);
-
       const res=await puter.ai.chat([
         {role:"system",content:system},
         {role:"user",content:prompt}
@@ -640,16 +489,6 @@ function App(){
         const text=part?.text||"";
         buffer+=text;
         chunkCount++;
-        
-        // Clear timeout on first chunk
-        if(!firstChunkReceived&&text){
-          if(streamTimeoutRef.current){
-            clearTimeout(streamTimeoutRef.current);
-            streamTimeoutRef.current=null;
-          }
-          firstChunkReceived=true;
-          console.log("✅ Stream active - receiving data");
-        }
         
         const cleaned=cleanCode(buffer);
         editorRef.current.setValue(cleaned);
@@ -666,12 +505,6 @@ function App(){
       }
 
       clearInterval(progressInterval);
-      
-      // Clean up timeout
-      if(streamTimeoutRef.current){
-        clearTimeout(streamTimeoutRef.current);
-        streamTimeoutRef.current=null;
-      }
 
       const final=cleanCode(buffer);
       const lang=detectLanguage(final);
@@ -717,7 +550,6 @@ function App(){
       }
 
     }catch(e){
-      killAllIntervals();
       showToast("Generation failed: "+e.message,"error");
     }
     
@@ -725,7 +557,6 @@ function App(){
     setLoading(false);
     setProgress(0);
     setAutoContinueActive(false);
-    killAllIntervals(); // Final cleanup
   }
 
   function selectFile(id){
@@ -807,9 +638,6 @@ function App(){
       return;
     }
 
-    // Kill all intervals before starting
-    killAllIntervals();
-
     setLoading(true);
     setProgress(0);
     generationActiveRef.current=true;
@@ -835,47 +663,20 @@ function App(){
 
       const context=buffer.slice(-800);
       
-      // Set hard timeout for stream
-      let firstChunkReceived=false;
-      streamTimeoutRef.current=setTimeout(()=>{
-        if(!firstChunkReceived){
-          clearInterval(progressInterval);
-          throw new Error("Continue stream stalled - no data in 20 seconds");
-        }
-      },20000);
-      
       const cont=await puter.ai.chat([
         {role:"system",content:system},
         {role:"user",content:`Continue this code EXACTLY where it stops:\n\n${context}\n\nComplete all open tags, functions, and statements.`}
       ],{model:"claude-sonnet-4-20250514",stream:true});
 
       for await(const part of cont){
-        const text=part?.text||"";
-        if(text){
-          // Clear timeout on first chunk
-          if(!firstChunkReceived){
-            if(streamTimeoutRef.current){
-              clearTimeout(streamTimeoutRef.current);
-              streamTimeoutRef.current=null;
-            }
-            firstChunkReceived=true;
-          }
-          
-          buffer+=text;
-          const cleaned=cleanCode(buffer);
-          editorRef.current.setValue(cleaned);
-          savedCodeBufferRef.current=cleaned;
-          lastEditorChangeRef.current=Date.now();
-        }
+        buffer+=part?.text||"";
+        const cleaned=cleanCode(buffer);
+        editorRef.current.setValue(cleaned);
+        savedCodeBufferRef.current=cleaned;
+        lastEditorChangeRef.current=Date.now();
       }
 
       clearInterval(progressInterval);
-      
-      // Clean up timeout
-      if(streamTimeoutRef.current){
-        clearTimeout(streamTimeoutRef.current);
-        streamTimeoutRef.current=null;
-      }
 
       const final=cleanCode(buffer);
       const updatedFile={...activeFile,content:final,size:final.length};
@@ -888,14 +689,12 @@ function App(){
       showToast(`✨ Code continued successfully! Used ${cost} credits.`,"success");
 
     }catch(e){
-      killAllIntervals();
       showToast("Continue failed: "+e.message,"error");
     }
 
     generationActiveRef.current=false;
     setLoading(false);
     setProgress(0);
-    killAllIntervals(); // Final cleanup
   }
 
   function resetCredits(){
@@ -929,7 +728,7 @@ function App(){
           {autoContinueActive&&(
             <span className="auto-continue-badge">
               <i data-lucide="loader" style={{width:"14px",height:"14px"}}></i>
-              Resuming
+              Auto-Continue
             </span>
           )}
         </div>
@@ -1008,7 +807,7 @@ function App(){
                 What would you like to build?
                 <span style={{marginLeft:"auto",fontSize:"0.75rem",background:"rgba(110,243,197,.15)",padding:"4px 10px",borderRadius:"6px",color:"#6ef3c5",display:"flex",alignItems:"center",gap:"4px"}}>
                   <i data-lucide="shield-check" style={{width:"14px",height:"14px"}}></i>
-                  Resumable Engine (90s)
+                  Auto-Continue Enabled
                 </span>
               </div>
               <textarea 
@@ -1066,7 +865,7 @@ function App(){
                 <div className="progress-fill" style={{width:`${progress}%`}}></div>
               </div>
               <div className="progress-text">
-                {autoContinueActive?"Resuming with fresh SDK...":"Generating your code..."} {progress}%
+                {autoContinueActive?"Auto-continuing generation...":"Generating your code..."} {progress}%
               </div>
             </div>
           </div>
