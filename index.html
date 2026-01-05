@@ -99,7 +99,7 @@ function App(){
 
     const response=await puter.ai.chat(
       [{role:"system",content:systemPrompt},{role:"user",content:prompt}],
-      {model:"claude-sonnet-4-5",stream:true}
+      {model:"claude-opus-4-5",stream:true}
     );
 
     let buffer="";
