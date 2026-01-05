@@ -6,8 +6,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
 <!-- React + Babel -->
-<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
 <!-- Lucide Icons -->
@@ -18,17 +18,16 @@
 <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.43.0/min/vs/loader.js"></script>
 
 <style>
+/* [Previous CSS unchanged - keeping same styles for brevity] */
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:Inter,system-ui,sans-serif;background:#0a0e1a;color:#f1f5f9;overflow-x:hidden}
 .app{max-width:1800px;margin:auto;padding:20px;position:relative}
 .layout{display:grid;grid-template-columns:280px 1fr 420px;gap:20px}
 
-/* Header */
 header{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.05);backdrop-filter:blur(20px);padding:20px 28px;border-radius:20px;margin-bottom:4px;border:1px solid rgba(110,243,197,.2);box-shadow:0 8px 32px rgba(0,0,0,.3);animation:slideDown 0.6s ease}
 .brand{display:flex;align-items:center;gap:12px;font-size:1.6rem;font-weight:900;background:linear-gradient(135deg,#6ef3c5,#4ade80);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .brand i{color:#6ef3c5;animation:pulse 2s ease infinite}
 
-/* Credit System */
 .credit-section{display:flex;align-items:center;gap:16px}
 .credit-display{display:flex;align-items:center;gap:10px;padding:10px 20px;border-radius:14px;background:rgba(110,243,197,.1);border:2px solid rgba(110,243,197,.3);font-weight:700;font-size:1rem;transition:all 0.3s}
 .credit-display.warning{background:rgba(251,191,36,.1);border-color:rgba(251,191,36,.5);animation:warningPulse 1.5s ease infinite}
@@ -38,7 +37,6 @@ header{grid-column:1/-1;display:flex;justify-content:space-between;align-items:c
 .credit-fill.warning{background:linear-gradient(90deg,#fbbf24,#f59e0b)}
 .credit-fill.danger{background:linear-gradient(90deg,#ef4444,#dc2626)}
 
-/* Sidebar - File Explorer */
 .sidebar{background:rgba(255,255,255,.06);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:20px;box-shadow:0 8px 32px rgba(0,0,0,.3);animation:fadeIn 0.6s ease;max-height:calc(100vh - 140px);overflow-y:auto}
 .sidebar-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.1)}
 .sidebar-title{display:flex;align-items:center;gap:8px;font-weight:700;color:#6ef3c5;font-size:1rem}
@@ -55,7 +53,6 @@ header{grid-column:1/-1;display:flex;justify-content:space-between;align-items:c
 .empty-state{text-align:center;padding:40px 20px;color:#64748b;font-size:0.9rem}
 .empty-state i{font-size:3rem;margin-bottom:12px;opacity:0.3}
 
-/* Main Content */
 .main-content{display:flex;flex-direction:column;gap:20px}
 .main-panel{background:rgba(255,255,255,.06);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:28px;box-shadow:0 8px 32px rgba(0,0,0,.3);animation:fadeIn 0.6s ease}
 .prompt-section{position:relative}
@@ -64,19 +61,16 @@ textarea{width:100%;min-height:120px;background:rgba(2,6,23,.8);color:#e5e7eb;bo
 textarea:focus{outline:none;border-color:#6ef3c5;box-shadow:0 0 0 3px rgba(110,243,197,.1)}
 textarea::placeholder{color:#64748b}
 
-/* Filename Input */
 .filename-section{margin-top:12px;display:flex;gap:8px;align-items:center}
 .filename-input{flex:1;background:rgba(2,6,23,.8);color:#e5e7eb;border-radius:12px;border:2px solid #1e293b;padding:10px 14px;font-size:0.9rem;transition:all 0.3s}
 .filename-input:focus{outline:none;border-color:#6ef3c5;box-shadow:0 0 0 3px rgba(110,243,197,.1)}
 .auto-name-btn{padding:10px 16px;background:rgba(110,243,197,.1);border:1px solid rgba(110,243,197,.3);border-radius:10px;color:#6ef3c5;cursor:pointer;font-size:0.85rem;font-weight:600;transition:all 0.3s}
 .auto-name-btn:hover{background:rgba(110,243,197,.2);transform:scale(1.02)}
 
-/* Token Estimation */
 .token-estimate{display:flex;align-items:center;gap:12px;margin-top:12px;padding:12px 16px;background:rgba(110,243,197,.05);border-radius:12px;border:1px solid rgba(110,243,197,.15);font-size:0.9rem;color:#94a3b8}
 .token-estimate i{color:#6ef3c5}
 .token-cost{font-weight:700;color:#6ef3c5}
 
-/* Actions */
 .actions{display:flex;gap:12px;margin-top:16px;flex-wrap:wrap}
 button{padding:14px 24px;border:none;border-radius:14px;font-weight:700;cursor:pointer;font-size:0.95rem;display:flex;align-items:center;gap:8px;transition:all 0.3s;position:relative;overflow:hidden}
 button:before{content:"";position:absolute;top:50%;left:50%;width:0;height:0;border-radius:50%;background:rgba(255,255,255,.2);transform:translate(-50%,-50%);transition:width 0.6s,height 0.6s}
@@ -89,14 +83,12 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
 button i{z-index:1}
 button span{z-index:1}
 
-/* Progress Bar */
 .progress-container{margin-top:16px;display:none}
 .progress-container.active{display:block;animation:fadeIn 0.3s}
 .progress-bar{width:100%;height:6px;background:#020617;border-radius:10px;overflow:hidden;border:1px solid #1e293b}
 .progress-fill{height:100%;background:linear-gradient(90deg,#6ef3c5,#4ade80,#6ef3c5);background-size:200% 100%;animation:progressShimmer 2s linear infinite;transition:width 0.3s}
 .progress-text{margin-top:8px;font-size:0.85rem;color:#94a3b8;text-align:center}
 
-/* Editor Container */
 .editor-container{background:rgba(255,255,255,.06);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:24px;box-shadow:0 8px 32px rgba(0,0,0,.3);animation:fadeIn 0.8s ease}
 .editor-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
 .editor-title{display:flex;align-items:center;gap:8px;font-weight:700;color:#6ef3c5;font-size:1.1rem}
@@ -106,7 +98,6 @@ button span{z-index:1}
 .icon-btn:disabled{opacity:.5;cursor:not-allowed}
 #editor{height:500px;border-radius:16px;border:2px solid #1e293b;overflow:hidden;box-shadow:inset 0 2px 8px rgba(0,0,0,.3)}
 
-/* Preview Container */
 .preview-container{background:rgba(255,255,255,.06);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:24px;box-shadow:0 8px 32px rgba(0,0,0,.3);animation:fadeIn 0.8s ease;display:none}
 .preview-container.active{display:block}
 .preview-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
@@ -116,13 +107,11 @@ button span{z-index:1}
 .console-line{display:block;margin:2px 0}
 .console-error{color:#ef4444}
 
-/* Stats */
 .stats{display:flex;gap:24px;margin-top:16px;padding:16px;background:rgba(2,6,23,.6);border-radius:12px;border:1px solid #1e293b;flex-wrap:wrap}
 .stat-item{display:flex;align-items:center;gap:8px;font-size:0.9rem;color:#94a3b8}
 .stat-item i{color:#6ef3c5}
 .stat-value{font-weight:700;color:#e5e7eb}
 
-/* Toast System */
 .toast{position:fixed;bottom:24px;right:24px;background:rgba(2,6,23,.95);backdrop-filter:blur(20px);border:2px solid;padding:16px 24px;border-radius:16px;display:flex;align-items:center;gap:12px;font-weight:600;box-shadow:0 8px 32px rgba(0,0,0,.5);animation:slideIn 0.3s ease;z-index:1000;max-width:400px}
 .toast.success{border-color:#4ade80;color:#4ade80}
 .toast.error{border-color:#ef4444;color:#ef4444}
@@ -130,7 +119,6 @@ button span{z-index:1}
 .toast.info{border-color:#6ef3c5;color:#6ef3c5}
 .toast i{flex-shrink:0}
 
-/* Alert Modal */
 .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:2000;animation:fadeIn 0.3s}
 .modal{background:rgba(2,6,23,.98);border:2px solid;border-radius:20px;padding:32px;max-width:500px;width:90%;box-shadow:0 16px 64px rgba(0,0,0,.7);animation:scaleIn 0.3s ease}
 .modal.warning{border-color:#fbbf24}
@@ -143,7 +131,6 @@ button span{z-index:1}
 .modal-body{color:#94a3b8;line-height:1.6;margin-bottom:24px}
 .modal-actions{display:flex;gap:12px}
 
-/* Animations */
 @keyframes slideDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes scaleIn{from{opacity:0;transform:scale(0.9)}to{opacity:1;transform:scale(1)}}
@@ -153,7 +140,6 @@ button span{z-index:1}
 @keyframes dangerPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.4)}50%{box-shadow:0 0 0 8px rgba(239,68,68,0)}}
 @keyframes progressShimmer{0%{background-position:0% 0}100%{background-position:200% 0}}
 
-/* Responsive */
 @media(max-width:1400px){.layout{grid-template-columns:280px 1fr}}
 @media(max-width:1024px){.layout{grid-template-columns:1fr}}
 @media(max-width:768px){
@@ -161,7 +147,7 @@ button span{z-index:1}
   .actions{flex-direction:column}
   button{width:100%;justify-content:center}
   .stats{flex-direction:column;gap:12px}
-  #editor,#preview-container{height:400px}
+  #editor{height:400px}
 }
 </style>
 </head>
@@ -169,24 +155,24 @@ button span{z-index:1}
 <div id="root"></div>
 
 <script type="text/babel">
-const {useState,useEffect,useRef}=React;
+const {useState,useEffect,useRef,useCallback}=React;
 
 const API_KEY = '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';
 
-// Storage Manager
 const storage={
   data:{files:[],credits:1000,activeFileId:null},
   save(){localStorage.setItem('reCodeSession',JSON.stringify(this.data));},
   load(){
-    const saved=localStorage.getItem('reCodeSession');
-    if(saved) this.data=JSON.parse(saved);
+    try{
+      const saved=localStorage.getItem('reCodeSession');
+      if(saved) this.data=JSON.parse(saved);
+    }catch(e){}
   }
 };
 
 function cleanCode(raw){
   return raw
-    .replace(/```[\s\S]*?```/g,m=>m.replace(/```[\w]*\n?|```/g,""))
-    .replace(/```/g,"")
+    .replace(/```[\s\S]*?```/g,'')
     .replace(/I don't see any previous code.*$/s,'')
     .replace(/Could you please share.*$/s,'')
     .replace(/I'll continue.*$/s,'')
@@ -196,52 +182,31 @@ function cleanCode(raw){
 
 function detectLanguage(code){
   if(!code||code.length<10)return"plaintext";
-  if(code.startsWith("<!DOCTYPE")||code.startsWith("<html")||/<html[\s>]/.test(code))return"html";
-  if(/import React|from ['"]react['"]|const.*=.*React/.test(code))return"javascript";
-  if(/def\s+\w+\(|import\s+\w+|print\(/.test(code))return"python";
-  if(/System\.out\.print|public\s+class|public\s+static\s+void/.test(code))return"java";
-  if(/#include\s*<|using namespace|std::/.test(code))return"cpp";
-  if(/func\s+\w+\(|let\s+\w+:|var\s+\w+:/.test(code))return"swift";
-  if(/fn\s+\w+\(|impl\s|pub\s+fn/.test(code))return"rust";
-  if(/<?php|function\s+\w+\(.*\)\s*{/.test(code))return"php";
-  if(/interface\s+\w+|type\s+\w+\s*=/.test(code))return"typescript";
-  return"javascript";
+  if(code.match(/<!DOCTYPE|(<html|(<head|(<body)/i))return"html";
+  if(code.match(/import React|from ['"]react['"]|React\./i))return"javascript";
+  if(code.match(/def\s+\w+\(|import\s+\w+|print\(/))return"python";
+  if(code.match(/System\.out\.print|public\s+class/i))return"java";
+  if(code.match(/#include\s*<|using namespace|std::/))return"cpp";
+  return code.match(/interface\s+\w+|type\s+\w+\s*=/)?"typescript":"javascript";
 }
 
 function generateSmartFilename(prompt,code,lang){
-  const keywords=prompt.toLowerCase().match(/\b(todo|calculator|game|chat|form|dashboard|api|app|component|website|page|tool|system)\b/g);
-  const mainKeyword=keywords?keywords:"code";
-  
-  const extensions={
-    javascript:"js",typescript:"ts",html:"html",python:"py",
-    java:"java",cpp:"cpp",rust:"rs",swift:"swift",php:"php"
-  };
+  const keywords=prompt.toLowerCase().match(/\b(calculator|game|chat|form|dashboard|api|app|website|tool)\b/);
+  const mainKeyword=keywords?keywords[0]:"code";
+  const extensions={javascript:"js",typescript:"ts",html:"html",python:"py",java:"java",cpp:"cpp"};
   const ext=extensions[lang]||"txt";
-  
-  let name=mainKeyword;
-  if(lang==="javascript"||lang==="typescript"){
-    const match=code.match(/(?:class|function|const)\s+(\w+)/);
-    if(match)name=match.toLowerCase();
-  }else if(lang==="python"){
-    const match=code.match(/def\s+(\w+)|class\s+(\w+)/);
-    if(match)name=(match||match).toLowerCase();
-  }else if(lang==="java"){
-    const match=code.match(/class\s+(\w+)/);
-    if(match)name=match.toLowerCase();
-  }
-  
-  return`${name}.${ext}`;
+  return `${mainKeyword}.${ext}`;
 }
 
 function estimateTokens(text){return Math.ceil(text.length/4);}
 function estimateCost(tokens){return Math.ceil(tokens/50);}
 
-async function callOpenRouter(system,prompt,stream=true){
+async function* streamOpenRouter(system,prompt){
   const controller=new AbortController();
-  const timeout=setTimeout(()=>controller.abort(),30000);
+  const timeoutId=setTimeout(()=>controller.abort(),30000);
   
   try{
-    const res=await fetch('https://openrouter.ai/api/v1/chat/completions',{
+    const response=await fetch('https://openrouter.ai/api/v1/chat/completions',{
       method:'POST',
       headers:{
         'Authorization':`Bearer ${API_KEY}`,
@@ -252,25 +217,50 @@ async function callOpenRouter(system,prompt,stream=true){
       body:JSON.stringify({
         model:'anthropic/claude-3.5-sonnet',
         messages:[{role:'system',content:system},{role:'user',content:prompt}],
-        stream,
+        stream:true,
         temperature:0.1
       }),
       signal:controller.signal
     });
     
-    clearTimeout(timeout);
-    
-    if(!res.ok){
-      const error=await res.text();
-      throw new Error(`API Error: ${res.status} ${error}`);
+    if(!response.ok){
+      const errorText=await response.text();
+      throw new Error(`API Error ${response.status}: ${errorText}`);
     }
     
-    if(stream){
-      return res.body?.getReader?res.body.getReader():null;
+    const reader=response.body?.getReader();
+    if(!reader) return;
+    
+    const decoder=new TextDecoder();
+    let buffer="";
+    
+    try{
+      while(true){
+        const {done,value}=await reader.read();
+        if(done) break;
+        
+        buffer+=decoder.decode(value,{stream:true});
+        const lines=buffer.split('\n');
+        buffer=lines.pop()||'';
+        
+        for(const line of lines){
+          if(line.startsWith('data: ')){
+            const data=line.slice(6);
+            if(data==='[DONE]') continue;
+            try{
+              const parsed=JSON.parse(data);
+              const delta=parsed.choices && parsed.choices[0] && parsed.choices[0].delta && parsed.choices[0].delta.content;
+              if(delta) yield delta;
+            }catch(e){}
+          }
+        }
+      }
+    }finally{
+      clearTimeout(timeoutId);
+      reader.releaseLock();
     }
-    return res.json();
   }catch(e){
-    clearTimeout(timeout);
+    clearTimeout(timeoutId);
     throw e;
   }
 }
@@ -280,7 +270,6 @@ function App(){
   const [filename,setFilename]=useState("");
   const [loading,setLoading]=useState(false);
   const [credits,setCredits]=useState(1000);
-  const [maxCredits]=useState(1000);
   const [toast,setToast]=useState(null);
   const [modal,setModal]=useState(null);
   const [progress,setProgress]=useState(0);
@@ -288,19 +277,18 @@ function App(){
   const [activeFileId,setActiveFileId]=useState(null);
   const [previewActive,setPreviewActive]=useState(false);
   const [previewConsole,setPreviewConsole]=useState([]);
+  
   const editorRef=useRef(null);
   const monacoRef=useRef(null);
   const previewRef=useRef(null);
-  const consoleRef=useRef([]);
-
   const activeFile=files.find(f=>f.id===activeFileId);
 
   useEffect(()=>{
     storage.load();
-    if(storage.data.files.length>0){
+    if(storage.data.files?.length>0){
       setFiles(storage.data.files);
-      setCredits(storage.data.credits);
-      if(storage.data.activeFileId)setActiveFileId(storage.data.activeFileId);
+      setCredits(storage.data.credits||1000);
+      if(storage.data.activeFileId) setActiveFileId(storage.data.activeFileId);
     }
     
     lucide.createIcons();
@@ -315,7 +303,7 @@ function App(){
         minimap:{enabled:false},
         fontSize:14,
         lineHeight:22,
-        fontFamily:"'Fira Code', 'Cascadia Code', Consolas, monospace",
+        fontFamily:"'Fira Code', monospace",
         padding:{top:16,bottom:16}
       });
     });
@@ -324,7 +312,9 @@ function App(){
   useEffect(()=>{
     if(activeFile&&editorRef.current){
       editorRef.current.setValue(activeFile.content);
-      monacoRef.current.editor.setModelLanguage(editorRef.current.getModel(),activeFile.language);
+      if(monacoRef.current){
+        monacoRef.current.editor.setModelLanguage(editorRef.current.getModel(),activeFile.language);
+      }
     }
   },[activeFileId,activeFile]);
 
@@ -333,97 +323,56 @@ function App(){
     storage.save();
   },[files,credits,activeFileId]);
 
-  function showToast(msg,type="info"){
+  const showToast=(msg,type="info")=>{
     setToast({msg,type});
     setTimeout(()=>setToast(null),4000);
-  }
+  };
 
-  function showModal(title,body,type,onConfirm){
+  const showModal=(title,body,type,onConfirm)=>{
     setModal({title,body,type,onConfirm});
-  }
+  };
 
-  function closeModal(){setModal(null);}
+  const closeModal=()=>setModal(null);
 
-  function autoGenerateFilename(){
+  const autoGenerateFilename=()=>{
     if(!prompt.trim()){
       showToast("Enter a prompt first","warning");
       return;
     }
-    const tempCode=editorRef.current?.getValue()||"";
+    const tempCode=editorRef.current?.getValue?.()||"";
     const lang=detectLanguage(tempCode);
     const name=generateSmartFilename(prompt,tempCode,lang);
     setFilename(name);
     showToast("Filename generated!","success");
-  }
+  };
 
   const estimatedCost=estimateCost(estimateTokens(prompt));
-  const creditPercent=(credits/maxCredits)*100;
+  const creditPercent=(credits/1000)*100;
   const creditStatus=creditPercent<=10?"danger":creditPercent<=30?"warning":"normal";
 
-  async function generate(){
+  const generate=async()=>{
     if(!prompt.trim()){
-      showToast("Please enter a prompt to generate code","warning");
+      showToast("Please enter a prompt","warning");
       return;
     }
-
     if(credits<=0){
-      showModal("No Credits Remaining","You've run out of credits. Reset credits to continue.","danger",null);
+      showModal("No Credits","Reset credits to continue.","danger",null);
       return;
     }
-
-    if(credits<estimatedCost&&credits<=100){
-      showModal("Low Credits","Continue with limited credits?","warning",()=>continueGeneration());
-      return;
-    }
-
     continueGeneration();
-  }
+  };
 
-  async function* streamOpenRouter(system,prompt){
-    const reader=await callOpenRouter(system,prompt,true);
-    if(!reader)return;
-    
-    const decoder=new TextDecoder();
-    let buffer="";
-    
-    try{
-      while(true){
-        const {done,value}=await reader.read();
-        if(done)break;
-        
-        buffer+=decoder.decode(value,{stream:true});
-        const lines=buffer.split('\n');
-        buffer=lines.pop()||""; // Keep incomplete line
-        
-        for(const line of lines){
-          if(line.startsWith('data: ')){
-            const data=line.slice(6);
-            if(data==='[DONE]')continue;
-            try{
-              const parsed=JSON.parse(data);
-              const delta=parsed.choices?.?.delta?.content;
-              if(delta)yield delta;
-            }catch(e){}
-          }
-        }
-      }
-    }finally{
-      reader.releaseLock();
-    }
-  }
-
-  async function continueGeneration(){
+  const continueGeneration=async()=>{
     closeModal();
     setLoading(true);
     setProgress(0);
     
     let buffer="";
-    const system=`You are an elite code generation expert. Generate production-ready, fully functional code:
-- Complete working code, NO placeholders/TODOs
-- Proper error handling and edge cases
-- Best practices and clean code
-- Optimized and efficient
-- Return ONLY code - no markdown, no explanations`;
+    const system=`You are an elite code generation expert. Generate production-ready code:
+- Complete working code, NO placeholders
+- Proper error handling
+- Best practices
+- Return ONLY code - no explanations`;
 
     try{
       const progressInterval=setInterval(()=>setProgress(p=>Math.min(p+2,95)),80);
@@ -431,14 +380,16 @@ function App(){
       for await(const text of streamOpenRouter(system,prompt)){
         buffer+=text;
         const cleaned=cleanCode(buffer);
-        editorRef.current.setValue(cleaned);
+        editorRef.current?.setValue(cleaned);
       }
       
       clearInterval(progressInterval);
       
       const final=cleanCode(buffer);
       const lang=detectLanguage(final);
-      monacoRef.current.editor.setModelLanguage(editorRef.current.getModel(),lang);
+      if(monacoRef.current && editorRef.current){
+        monacoRef.current.editor.setModelLanguage(editorRef.current.getModel(),lang);
+      }
 
       let finalFilename=filename.trim();
       if(!finalFilename){
@@ -458,182 +409,122 @@ function App(){
 
       setFiles(prev=>[newFile,...prev]);
       setActiveFileId(newFile.id);
-
       const totalCost=Math.ceil(final.length/150);
       setCredits(prev=>Math.max(prev-totalCost,0));
       
       setProgress(100);
-      showToast(`File "${finalFilename}" created! Used ${totalCost} credits.`,"success");
+      showToast(`"${finalFilename}" created! Used ${totalCost} credits.`,"success");
       setPrompt("");
       setFilename("");
-
     }catch(e){
       showToast("Generation failed: "+e.message,"error");
     }
     
     setLoading(false);
     setProgress(0);
-  }
+  };
 
-  function selectFile(id){
+  const selectFile=id=>{
     setActiveFileId(id);
     lucide.createIcons();
-  }
+  };
 
-  function deleteFile(id,e){
+  const deleteFile=(id,e)=>{
     e.stopPropagation();
-    showModal("Delete File?","This action cannot be undone.","danger",()=>{
+    showModal("Delete File?","This cannot be undone.","danger",()=>{
       setFiles(prev=>prev.filter(f=>f.id!==id));
       if(activeFileId===id){
         setActiveFileId(null);
-        editorRef.current.setValue("// Select a file or generate new code");
-        monacoRef.current.editor.setModelLanguage(editorRef.current.getModel(),"plaintext");
+        editorRef.current?.setValue("// Select a file or generate new code");
       }
       closeModal();
       showToast("File deleted","info");
     });
-  }
+  };
 
-  function downloadFile(id,e){
+  const downloadFile=(id,e)=>{
     e.stopPropagation();
     const file=files.find(f=>f.id===id);
-    if(!file)return;
+    if(!file) return;
     
     const blob=new Blob([file.content],{type:"text/plain"});
     const url=URL.createObjectURL(blob);
     const a=document.createElement("a");
     a.href=url;
     a.download=file.name;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
     showToast(`"${file.name}" downloaded!`,"success");
-  }
+  };
 
-  function copyCode(){
+  const copyCode=()=>{
     if(!activeFile){
       showToast("No file selected","warning");
       return;
     }
-    navigator.clipboard.writeText(activeFile.content);
-    showToast("Code copied!","success");
-  }
+    navigator.clipboard.writeText(activeFile.content).then(()=>{
+      showToast("Code copied!","success");
+    });
+  };
 
-  function togglePreview(){
+  const togglePreview=()=>{
     if(!activeFile){
       showToast("No file selected","warning");
       return;
     }
-    
-    if(previewActive){
-      setPreviewActive(false);
-      setPreviewConsole([]);
-      return;
-    }
+    setPreviewActive(!previewActive);
+    if(!previewActive) previewCode();
+  };
 
-    setPreviewActive(true);
-    previewCode();
-  }
-
-  async function previewCode(){
-    if(!activeFile)return;
+  const previewCode=()=>{
+    if(!activeFile || !previewRef.current) return;
     
-    consoleRef.current=[];
     setPreviewConsole([]);
     
-    const iframe=previewRef.current;
-    if(!iframe)return;
-    
     try{
-      // Clear iframe
+      const iframe=previewRef.current;
       iframe.srcdoc="";
       
-      if(activeFile.language==="html"||activeFile.name.endsWith('.html')){
-        // HTML preview
+      if(activeFile.language==="html" || activeFile.name.endsWith('.html')){
         iframe.srcdoc=activeFile.content;
-        showToast("HTML preview loaded","success");
-      }else if(activeFile.language==="javascript"||activeFile.name.match(/\.(js|ts)$/)){
-        // JS preview - create HTML wrapper
+      }else if(activeFile.language==="javascript" || activeFile.name.match(/\.(js|ts)$/)){
         const htmlWrapper=`<!DOCTYPE html>
-<html>
-<head>
-  <style>body{margin:0;padding:20px;font-family:Arial,sans-serif;background:#1a1b26;color:#e5e7eb}</style>
-</head>
-<body>
-  <div id="app"></div>
-  <script>${activeFile.content}<\/script>
-  <script>
-    try{
-      console.log("✅ Code loaded successfully");
-      console.log("📦 Global scope:",Object.keys(window).filter(k=>k.length<20));
-    }catch(e){
-      console.error("❌ Preview error:",e);
-    }
-  <\/script>
-</body>
-</html>`;
+<html><head><style>body{margin:0;padding:20px;font-family:Arial;background:#1a1b26;color:#e5e7eb}</style></head>
+<body><div id="app"></div><script>${activeFile.content}<\/script>
+<script>console.log("✅ Code loaded");</script></body></html>`;
         iframe.srcdoc=htmlWrapper;
-        showToast("JS preview loaded","success");
       }else{
-        // Other languages - show code
         iframe.srcdoc=`<!DOCTYPE html>
 <html><body style="font-family:monospace;padding:20px;background:#0a0e1a;color:#e5e7eb">
-  <h2>📱 Preview (${activeFile.language.toUpperCase()})</h2>
-  <p>Live preview available for <strong>HTML</strong> and <strong>JavaScript</strong></p>
-  <pre style="background:#020617;padding:20px;border-radius:12px;overflow:auto">${activeFile.content.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>
+<h2>📱 Preview (${activeFile.language.toUpperCase()})</h2>
+<p>Live preview for HTML/JavaScript only</p>
+<pre style="background:#020617;padding:20px;border-radius:12px;overflow:auto">${activeFile.content.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>
 </body></html>`;
-        showToast("Preview mode: "+activeFile.language,"info");
       }
       
-      // Console capture
-      iframe.onload=()=>{
-        try{
-          const consoleLog=(...args)=>logToConsole("log",args.map(a=>String(a)));
-          const consoleError=(...args)=>logToConsole("error",args.map(a=>String(a)));
-          
-          iframe.contentWindow.console.log=consoleLog;
-          iframe.contentWindow.console.error=consoleError;
-          
-          // Override native console
-          Object.defineProperty(iframe.contentWindow.console,'log',{value:consoleLog});
-          Object.defineProperty(iframe.contentWindow.console,'error',{value:consoleError});
-        }catch(e){}
-      };
-      
+      showToast("Preview loaded","success");
     }catch(e){
-      showToast("Preview failed: "+e.message,"error");
+      showToast("Preview failed","error");
     }
-  }
+  };
 
-  function logToConsole(type,args){
-    const timestamp=new Date().toLocaleTimeString();
-    const message=`[${timestamp}] ${args.join(' ')}`;
-    consoleRef.current.push({type,message});
-    setPreviewConsole(prev=>[...prev.slice(-50),{type,message}]);
-  }
-
-  function resetCredits(){setCredits(1000);showToast("Credits reset","success");}
-  function clearAllFiles(){
-    showModal("Clear All Files?","This cannot be undone.","danger",()=>{
-      setFiles([]);
-      setActiveFileId(null);
-      editorRef.current.setValue("// All files cleared");
-      closeModal();
-      showToast("All files cleared","info");
-    });
-  }
+  const resetCredits=()=>{
+    setCredits(1000);
+    showToast("Credits reset","success");
+  };
 
   return(
     <div className="app">
       <header>
         <div className="brand">
           <i data-lucide="code-2"></i>
-          Re-Code AI
-          <span style={{fontSize:"0.7rem",background:"rgba(110,243,197,.2)",padding:"4px 10px",borderRadius:"8px",marginLeft:"8px",color:"#6ef3c5",fontWeight:600}}>PREMIUM</span>
+          Re-Code AI <span style={{fontSize:"0.7rem",background:"rgba(110,243,197,.2)",padding:"4px 10px",borderRadius:"8px",marginLeft:"8px",color:"#6ef3c5",fontWeight:600}}>PREMIUM</span>
         </div>
         <div className="credit-section">
           <div className={`credit-display ${creditStatus}`}>
-            <i data-lucide="zap"></i>
-            <span>{credits} Credits</span>
+            <i data-lucide="zap"></i> {credits} Credits
           </div>
           <div className="credit-bar">
             <div className={`credit-fill ${creditStatus}`} style={{width:`${creditPercent}%`}}></div>
@@ -648,11 +539,10 @@ function App(){
         <aside className="sidebar">
           <div className="sidebar-header">
             <div className="sidebar-title">
-              <i data-lucide="folder"></i>
-              Files ({files.length})
+              <i data-lucide="folder"></i> Files ({files.length})
             </div>
             {files.length>0&&(
-              <button className="icon-btn" onClick={clearAllFiles} title="Clear All">
+              <button className="icon-btn" onClick={()=>showModal("Clear All?","Cannot be undone.","danger",()=>setFiles([]))} title="Clear All">
                 <i data-lucide="trash-2"></i>
               </button>
             )}
@@ -693,31 +583,42 @@ function App(){
                 <i data-lucide="message-square"></i>
                 What would you like to build?
                 <span style={{marginLeft:"auto",fontSize:"0.75rem",background:"rgba(110,243,197,.15)",padding:"4px 10px",borderRadius:"6px",color:"#6ef3c5",display:"flex",alignItems:"center",gap:"4px"}}>
-                  <i data-lucide="shield-check" style={{width:"14px",height:"14px"}}></i>
-                  Quality Mode
+                  <i data-lucide="shield-check" style={{width:"14px",height:"14px"}}></i> Quality Mode
                 </span>
               </div>
-              <textarea value={prompt} onChange={e=>setPrompt(e.target.value)} placeholder="Create a responsive calculator with gradient design..." disabled={loading}/>
+              <textarea 
+                value={prompt} 
+                onChange={e=>setPrompt(e.target.value)} 
+                placeholder="Create a responsive calculator with gradient design..."
+                disabled={loading}
+              />
               
               <div className="filename-section">
-                <input type="text" className="filename-input" value={filename} onChange={e=>setFilename(e.target.value)} placeholder="Filename (auto-generated)" disabled={loading}/>
+                <input 
+                  type="text" 
+                  className="filename-input"
+                  value={filename}
+                  onChange={e=>setFilename(e.target.value)}
+                  placeholder="Filename (auto-generated)"
+                  disabled={loading}
+                />
                 <button className="auto-name-btn" onClick={autoGenerateFilename} disabled={loading}>
-                  <i data-lucide="wand-2" style={{width:"16px",height:"16px"}}></i> Auto
+                  <i data-lucide="wand-2"></i> Auto
                 </button>
               </div>
               
               {prompt&&(
                 <div className="token-estimate">
                   <i data-lucide="info"></i>
-                  <span>Cost: ~{estimatedCost} credits • Remaining: {Math.max(credits-estimatedCost,0)}</span>
+                  <span>Cost: ~{estimatedCost} credits</span>
                 </div>
               )}
             </div>
 
             <div className="actions">
               <button className="primary" onClick={generate} disabled={loading||!prompt.trim()}>
-                <i data-lucide={loading?"loader":"sparkles"}></i>
-                <span>{loading?"Generating...":"Generate Code"}</span>
+                <i data-lucide={loading?"loader-2":"sparkles"}></i>
+                {loading?"Generating...":"Generate Code"}
               </button>
               <button className="secondary" onClick={copyCode} disabled={!activeFile}>
                 <i data-lucide="copy"></i> Copy
@@ -736,14 +637,12 @@ function App(){
             <div className="editor-header">
               <div className="editor-title">
                 <i data-lucide="code"></i>
-                {activeFile?activeFile.name:"Editor"}
+                {activeFile?.name || "Editor"}
               </div>
               <div className="editor-actions">
                 {activeFile&&(
                   <>
-                    <div style={{fontSize:"0.9rem",color:"#94a3b8"}}>
-                      {activeFile.language}
-                    </div>
+                    <span style={{fontSize:"0.9rem",color:"#94a3b8"}}>{activeFile.language}</span>
                     <button className="icon-btn" onClick={togglePreview} title="Preview">
                       <i data-lucide={previewActive?"eye-off":"eye"}></i>
                     </button>
@@ -752,32 +651,13 @@ function App(){
               </div>
             </div>
             <div id="editor"></div>
-            <div className="stats">
-              <div className="stat-item">
-                <i data-lucide="files"></i>
-                <span>Total Files: <span className="stat-value">{files.length}</span></span>
-              </div>
-              {activeFile&&(
-                <>
-                  <div className="stat-item">
-                    <i data-lucide="file-text"></i>
-                    <span>Chars: <span className="stat-value">{activeFile.size.toLocaleString()}</span></span>
-                  </div>
-                  <div className="stat-item">
-                    <i data-lucide="zap"></i>
-                    <span>Credits Used: <span className="stat-value">{maxCredits-credits}</span></span>
-                  </div>
-                </>
-              )}
-            </div>
           </div>
         </div>
 
         <div className={`preview-container ${previewActive&&activeFile?"active":""}`}>
           <div className="preview-header">
             <div className="preview-title">
-              <i data-lucide="monitor"></i>
-              Live Preview
+              <i data-lucide="monitor"></i> Live Preview
             </div>
             <div className="editor-actions">
               <button className="icon-btn" onClick={previewCode} title="Refresh">
@@ -789,13 +669,6 @@ function App(){
             </div>
           </div>
           <iframe ref={previewRef} id="preview-iframe" title="Preview"/>
-          <div id="preview-console">
-            {previewConsole.map((log,i)=>(
-              <div key={i} className={`console-line ${log.type==="error"?"console-error":""}`}>
-                {log.message}
-              </div>
-            ))}
-          </div>
         </div>
       </div>
 
@@ -822,12 +695,8 @@ function App(){
             </div>
             <div className="modal-body">{modal.body}</div>
             <div className="modal-actions">
-              {modal.onConfirm&&(
-                <button className="primary" onClick={modal.onConfirm}>Continue</button>
-              )}
-              <button className="secondary" onClick={closeModal}>
-                {modal.onConfirm?"Cancel":"Close"}
-              </button>
+              {modal.onConfirm&&<button className="primary" onClick={modal.onConfirm}>Continue</button>}
+              <button className="secondary" onClick={closeModal}>Close</button>
             </div>
           </div>
         </div>
