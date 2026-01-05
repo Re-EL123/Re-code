@@ -1,35 +1,33 @@
-export const runtime = 'nodejs';  // Before 'use client';
+"use client";
 
-'use client';
 import { useState, useRef, useEffect } from "react";
 
 export default function ReCodeClaude() {
-  const [prompt, setPrompt] = useState('React dashboard with Tailwind charts');
-  const [code, setCode] = useState('');
+  const [prompt, setPrompt] = useState("React dashboard with Tailwind charts");
+  const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [previewSrc, setPreviewSrc] = useState('');
+  const iframeRef = useRef(null);
+  const [previewSrc, setPreviewSrc] = useState("");
 
   async function generateAndPreview() {
     setLoading(true);
-    setCode('');
+    setCode("");
 
-    const response = await fetch('/api/claude/stream', {
-      method: 'POST',
+    const response = await fetch("/api/claude/stream", {
+      method: "POST",
       body: JSON.stringify({ prompt }),
-      headers: { 'Content-Type': 'application/json' },
+      headers: { "Content-Type": "application/json" },
     });
 
     const reader = response.body?.getReader();
     const decoder = new TextDecoder();
     
-    // PERFECT STREAMING - accumulates EVERY character
     while (true) {
-      const { done, value } = await reader?.read()!;
+      const { done, value } = await reader?.read();
       if (done) break;
       
       const chunk = decoder.decode(value, { stream: true });
-      setCode(prev => prev + chunk);
+      setCode((prev) => prev + chunk);
     }
     
     setLoading(false);
@@ -38,11 +36,10 @@ export default function ReCodeClaude() {
 
   const updatePreview = () => {
     if (code) {
-      const blob = new Blob([code], { type: 'text/html;charset=utf-8' });
+      const blob = new Blob([code], { type: "text/html;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       setPreviewSrc(url);
       
-      // Cleanup old preview
       if (iframeRef.current?.src) {
         URL.revokeObjectURL(iframeRef.current.src);
       }
@@ -75,24 +72,24 @@ export default function ReCodeClaude() {
               disabled={loading}
               className="w-full px-8 py-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold text-xl rounded-2xl hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
-              {loading ? '🔄 Claude is streaming PERFECT code...' : '✨ Generate & Live Preview'}
+              {loading ? "🔄 Claude is streaming PERFECT code..." : "✨ Generate & Live Preview"}
             </button>
             
             <div className="bg-gray-900/50 border border-white/10 rounded-2xl p-6 max-h-96 overflow-auto">
               <pre className="font-mono text-sm whitespace-pre-wrap text-white">
-                {code || '/* Live Claude Sonnet output streams here - 100% complete, no truncation */'}
+                {code || "/* Live Claude Sonnet output streams here - 100% complete, no truncation */"}
               </pre>
             </div>
           </div>
 
-          {/* VISUAL PREVIEW */}
+          {/* Live Preview */}
           <div>
             <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
               🎥 Live Visual Preview
               <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                previewSrc ? 'bg-green-500/20 text-green-300' : 'bg-gray-500/20 text-gray-400'
+                previewSrc ? "bg-green-500/20 text-green-300" : "bg-gray-500/20 text-gray-400"
               }`}>
-                {previewSrc ? '✅ LIVE' : '⚫ Inactive'}
+                {previewSrc ? "✅ LIVE" : "⚫ Inactive"}
               </span>
             </h3>
             
